@@ -1,0 +1,24 @@
+{
+  "name": "dyego-ts",
+  "version": "0.0.1",
+  "description": "A prototype for dyego in TypeScript",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "jasmine",
+    "cover": "c8 --reporter html node_modules/jasmine/bin/jasmine.js"
+  },
+  "author": "Chuck Jazdzewski <chuckjaz@gmail.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jasmine": "^3.9.1",
+    "c8": "^7.9.0",
+    "jasmine": "^3.9.0",
+    "jasmine-spec-reporter": "^7.0.0",
+    "jasmine-ts": "^0.4.0",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
+  }
+}

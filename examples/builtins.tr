@@ -1,0 +1,640 @@
+let Inst = Uint16
+let Size = UInt64
+
+ket rt = <
+    let bool = <
+        let size: Size = 1
+        let base: Inst = 0x0000
+
+        let load: Inst = base + 0
+        let store: Inst = base + 2
+        let pload: Inst = base + 3
+        let lload: Inst = base + 4
+        let lstore: Inst = base + 5
+
+        let eq: Inst = base + 6
+        let neq: Inst = base + 7
+        let not: Inst = base + 8
+    >
+    let int8 = <
+        let size: Size = 1
+        let base: Inst = 0x0100
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let int16 = <
+        let size: Size = 2
+        let base: Inst = 0x0200
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let int32 = <
+        let size: Size = 4
+        let base: Inst = 0x0300
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let int64 = <
+        let size: Size = 8
+        let base: Inst = 0x0400
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let uint8 = <
+        let size: Size = 1
+        let base: Inst = 0x0500
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let uint16 = <
+        let size: Size = 2
+        let base: Inst = 0x0600
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let uint32 = <
+        let size: Size = 4
+        let base: Inst = 0x0700
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let int64 = <
+        let size: Size = 8
+        let base: Inst = 0x0800
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+        let mod: Inst = base + 9
+        let and: Inst = base + 10
+        let or: Inst = base + 11
+        let not: Inst = base + 12
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let float32 = <
+        let size: Size = 4
+        let base: Inst = 0x0900
+
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+    let float64 = <
+        let size: Size = 4
+        let base: Inst = 0x0A00
+        let load: Inst = base + 0
+        let store: Inst = base + 1
+        let pload: Inst = base + 2
+        let lload: Inst = base + 3
+        let lstore: Inst = base + 4
+
+        let add: Inst = base + 5
+        let sub: Inst = base + 6
+        let mult: Inst = base + 7
+        let div: Inst = base + 8
+
+        let gt: Inst = base + 13
+        let lt: Inst = base + 14
+        let gte: Inst = base + 15
+        let lte: Inst = base + 16
+        let eq: Inst = base + 17
+    >
+>
+
+let SizedInstructions = <*
+    let size: Size
+*>
+
+let InternalSized = <
+    Instructions: SizedInstructions 
+->
+    let `@size`: Size = Instrucitons.size
+*>
+
+let Address = UInt32
+let ParameterIndex = UInt8
+let LocalIndex = UInt8
+
+let Locatable = <*
+    let `@load.global`: { address: Address -> This }
+    let `@store.global`: { this: This, address: Address }
+    let `@load.param`: { parameter: ParameterIndex -> This }
+    let `@load.local`: { local: LocalIndex -> This }
+    let `@store.local`: { this: This, local: LocalIndex }
+*>
+
+let LocationInstructions = <*
+    let load: Inst
+    let store: Inst
+    let pload: Inst
+    let lload: Inst
+    let lstore: Inst
+*>
+
+let InternalLocation = <
+    Instructions: LocationInstructions
+->
+    let `@load.global`: { address: Address -> This } = {! address, Instructions.load !}
+    let `@store.global`: { this: This, address: Address } = {! this, address, Instructions.store !}
+    let `@load.param`: { parameter: ParameterIndex -> This } = {! this, Instructions.pload !}
+    let `@load.local`: { local: LocalIndex -> This } = {! local, Instructions.lload !}
+    let `@store.local`: { this: This, local: LocalIndex } = {! this, local, Instructions.lstore !}
+> : Locatable
+
+let Equatable = <*
+    let `==`: { this: This, other: This -> Boolean }
+    let `!=`: { this: This, other: This -> Boolean }
+*>
+
+let EqualityInstructions = <*
+    let eq: Inst
+    let neq: Inst
+*>
+
+let InternalEquatable = <
+    Instructions: EqualityInstructions
+->
+    let `==`: { this: This, other: This -> Boolean } = {! this, other, Instructions.eq !}
+    let `!=`: { this: This, other: This -> Boolean } = {! this, other, Instructions.neq !}
+> : Equatable
+
+let Comparable = <*
+    ...Equatable
+    let `>`: { this: This, other: This -> Boolean }
+    let `<`: { this: This, other: This -> Boolean }
+    let `>=`: { this: This, other: This -> Boolean }
+    let `<=`: { this: This, other: This -> Boolean }
+*>
+
+let ComparableInstructions = <*
+    ..EqualityInstructions
+    let gt: Int
+    let lt: Int
+    let gte: Int
+    let lte: Int
+    let eq: Int    
+*>
+
+let InternalComparable = <
+    Instructions: ComparableInstructions
+->
+    ...InternalEquatable<:Instructions>
+    let `>`: { this: This, other: This -> Boolean } = {! this, other, Instructions.gt !}
+    let `<`: { this: This, other: This -> Boolean } = {! this, other, Instructions.lt !}
+    let `>=`: { this: This, other: This -> Boolean } = {! this, other, Instructions.gte !}
+    let `<=`: { this: This, other: This -> Boolean } = {! this, other, Instructions.lte !}    
+> : Comparable
+
+let NumericInstructions = <*
+    let add: Inst
+    let sub: Inst
+    let mult: Inst
+    let div: Inst
+*>
+
+let InternalNumeric = <
+    T: type
+    Instructions: NumericInstructions
+->
+    let `+`: { this: T, other: T -> T }: {! this, other, Instructions.add !}
+    let `-`: { this: T, other: T -> T }: {! this, other, Instructions.sub !}
+    let `*`: { this: T, other: T -> T }: {! this, other, Instructions.mult !}
+    let `\`: { this: T, other: T -> T }: {! this, other, Instructions.div !}
+>
+
+let BitwiseInstructions = <*
+    let or: Inst
+    let and: Inst
+    let not: Inst
+*>
+
+let InternalBitwise = <
+    T: type
+    Instructions: BitwiseInstructions
+->
+    let `|`: { this: T, other: T -> T } = {! this, other, Instructions.or !}
+    let `&`: { this: T, other: T -> T } = {! this, other, Instructions.and !}
+    let `^`: { this: T, other: T -> T } = {! this, other, Instructions.xor !}
+    let shl: { this: T, other: Int -> T } = {! this, other, Instructions.shl !}
+    let shr: { this: T, other: Int -> T } = {! this, other, Instructions.shr !}
+    let ror: { this: T, other: Int -> T } = {! this, other, Instructions.ror !}
+    let rol: { this: T, other: Int -> T } = {! this, other, Instructions.rol !}
+>
+
+let IntegerInstructions = <
+    ...NumericInstructions
+    ...ComparableInstructions
+    ...BitwiseInstructions
+    let mod: Inst
+>
+
+let InternalInteger = <
+    T: type
+    Instructions: IntegerInstructions
+->
+    ...InternalSized<:Instructions>
+    ...InternalLocation<:T, :Instructions>
+    ...InternalComparable<:T, :Instructions>
+    ...InternalNumeric<:T, :Instructions>
+    ...InternalBitwise<:T, :Instructions>
+    let `%`: { this: T, other: T -> T }: {! this, other, Instructions.mod !}
+>
+
+let To64Instructions = <*
+    let to64: Inst
+*>
+
+let InternalToInt64 = <
+    T: type
+    Instructions: To64Instructions
+->
+    let toInt64: { this: T -> Int64 } = {! this, Instructions.to64 !}
+>
+
+let InternalToUInt64 = <
+    T: type
+    Instructions: To64Instructions
+->
+    let toInt64: { this: T -> UInt64 } = {! this, Instructions.to64 !}
+>
+
+let To32Instructions = <*
+    let to32: Inst
+*>
+
+let InternalToInt32 = <
+    T: type
+    Instructions: To32Instructions
+->
+    let toInt32: { this: T -> Int32 } = {! this, Instructions.to32 !}
+    let toInt:  { this: T -> Int } = {! this, Instructions.to32 !}
+>
+
+let InternalToUInt32 = <
+    T: type
+    Instrutions: To32Instructions
+->
+    let toUInt32: { this: T -> UInt32 } = {! this, Instruction.to32 !}
+>
+
+let To16Instructions = <*
+    let to16: Inst
+*>
+
+let InternalToInt16 = <
+    T: type
+    Instructions: To16Instructions
+->
+    let toInt16: { this: T -> Int16 }: {! this, Instructions.to16 !}
+>
+
+let InternalToUInt16 = <
+    T: type
+    Instrucitons: To16Instructions
+->
+    let toUInt16: { this: T -> UInt16 }: {! this, Instruction.to16 !}
+>
+
+let To8Instructions = <*
+    let to8: Inst
+*>
+
+let InternalToInt8 = <
+    T: type
+    Instruction: To8Instructions
+->
+    let toInt8: { this: T -> Int8 }: {! this, Instruction.to8 !}
+>
+
+let InternalToUInt8 = <
+    T: type
+    Instruction: To8Instructions
+->
+    let toUInt8: { this: T -> UInt8 }: {! this, Instruction.to8 !}
+    let toByte: { this: T -> Byte }: {! this, Instruction.to8 !}
+>
+
+let ToUnsignedInstructions = <*
+    let unsigned: Inst
+*>
+
+let InternalToUnsigned = <
+    T: type
+    UnsignedType: type
+    Instructions: ToUnsignedInstructions
+->
+    let toUnsigned = { this: T -> UnsignedType } = {! this, Instructions.unsigned !}
+>
+
+let ToSignedInstructions = <*
+    let signed: Inst
+*>
+
+let InternalToSigned = <
+    T: type
+    SignedType: type
+    Instructions: ToUnsignedInstructions
+->
+    let toSigned = { this: T -> SignedType } = {! this, Instruction.signed !}
+>
+
+let Boolean = <
+    ...InternalSized<Instructions: rt.bool>
+    ...InternalLocation<T: Boolean, Instructions: rt.bool>
+    ...InternalEquatable<T:  Boolean, Instructions: rt.bool>
+    let `!`: {! this: Boolean -> Boolean } = { this, rt.bool.not }
+>
+
+let Int8 = <
+    ...InternalInteger<T: Int8, Instructions: rt.int8>
+    ...InternalToInt16<T: Int8, Instructions: rt.int8>
+    ...InternalToInt32<T: Int8, Instructions: rt.int8>
+    ...InternalToInt34<T: Int8, Instructions: rt.int8>
+    ...InternalToUnsigned<T: Int8, UnsignedType: UInt8, Instructions: rt.int8>
+>
+
+let Int16 = <
+    ...InternalInteger<T: Int16, Instructions: rt.int16>
+    ...InternalToInt8<T: Int16, Instructions: rt.int16>
+    ...InternalToInt32<T: Int16, Instructions: rt.int16>
+    ...InternalToInt64<T: Int16, Instrucitons: rt.int16>
+    ...InternalToUnsigned<T: Int16, UnsignedType: UInt16, Instructions: rt.int16>
+>
+
+let Int32 = <
+    ...InternalInteger<T: Int32, Instruction: rt.int32>
+    ...InternalToInt8<T: Int32, Instructions: rt.int32>
+    ...InternalToInt16<T: Int32, Instructions: rt.int32>
+    ...InternalToInt64<T: Int32, Instrucitons: rt.int32>
+    ...InternalToUnsigned<T: Int32, UnsignedType: UInt32, Instructions: rt.int32>
+>
+
+let Int64 = <
+    ...InternalInteger<T: Int64, Instruction: rt.int64>
+    ...InternalToInt8<T: Int64, Instructions: rt.int64>
+    ...InternalToInt16<T: Int64, Instructions: rt.int64>
+    ...InternalToInt32<T: Int64, Instrucitons: rt.int64>
+    ...InternalToUnsigned<T: Int64, UnsignedType: UInt64, Instructions: rt.int64>
+>
+
+let UInt8 = <
+    ...InternalInteger<T: UInt8, Instructions: rt.uint8>
+    ...InternalToInt16<T: UInt8, Instructions: rt.uint8>
+    ...InternalToInt32<T: UInt8, Instructions: rt.uint8>
+    ...InternalToInt34<T: UInt8, Instructions: rt.uint8>
+    ...InternalToSigned<T: UInt8, SignedType: Int8, Instructions: rt.uint8>
+>
+
+let Int16 = <
+    ...InternalInteger<T: UInt16, Instructions: rt.uint16>
+    ...InternalToInt8<T: UInt16, Instructions: rt.uint16>
+    ...InternalToInt32<T: UInt16, Instructions: rt.uint16>
+    ...InternalToInt64<T: UInt16, Instrucitons: rt.uint16>
+    ...InternalToSigned<T: UInt16, SignedType: Int16, Instructions: rt.uint16>
+>
+
+let Int32 = <
+    ...InternalInteger<T: UInt32, Instructions: rt.uint32>
+    ...InternalToInt8<T: UInt32, Instructions: rt.uint32>
+    ...InternalToInt16<T: UInt32, Instructions: rt.uint32>
+    ...InternalToInt64<T: UInt32, Instrucitons: rt.uint32>
+    ...InternalToSigned<T: UInt32, SignedType: Int32, Instructions: rt.uint32>
+>
+
+let Int64 = <
+    ...InternalInteger<T: UInt64, Instructions: rt.uint64>
+    ...InternalToInt8<T: UInt64, Instructions: rt.uint64>
+    ...InternalToInt16<T: UInt64, Instructions: rt.uint64>
+    ...InternalToInt32<T: UInt64, Instrucitons: rt.uint64>
+    ...InternalToSigned<T: UInt64, SignedType: Int64, Instructions: rt.uint64>
+>
+
+let FloatingPointInstructions = <*
+    ...NumericInstructions
+    ...ComparableInstructions
+*>
+
+let InternalFloatingPoint = <
+    T: type,
+    Instructions: FloatingPointInstructions
+->
+    ...InternalNumeric<:T, :Instructions>
+    ...InternalComparable<:T,  :Instructions>
+>
+
+let Float32 = <
+    ...InternalFloatingPoint<T: Float32, Instructions: rt.float32>
+    let toFloat64: { this: Float32 -> Float64 } = {! this, tr.float32.to64 !}
+    let toDouble: { this: Float32 -> Float64 } = {! this, tr.float32.to64 !}
+>
+
+let Float64 = <
+    ...InternalFloatingPoint<T: Float32, Instructions: rt.float32>
+    let toFloat32: { this: Float64 -> Float64 } = {! this, tr.float64.to32 !}
+>    
+
+let Byte = UInt8
+let Int = Int32
+
+let Reference = <
+    T: InternalLocation
+->
+    let `*`: { this: This -> T } = {! this, T.`@load` !}
+    let `=`: { this: this, value: T } = {! this, value, T.`@store` }
+>
+
+let ArrayElement = <*
+    ...InternalSized
+    ...InternalLocation
+*>
+
+let Array = <
+    T: ArrayElement, 
+    Size: UInt32
+->
+    ...InternalSized<:Size * T.`@size`>
+
+    let size: UInt32 = Size
+    let `[]`: { this: This -> Reference<T> } = {!
+        infdex 
+        T.`@size`
+        rt.int32.mult
+        This.`@size`
+        rt.index.validate
+        rt.addr.effective(this)
+        rt.int32.add
+    !}
+>
+
+<
+    let Int8 = Int8
+    let Int16 = Int16
+    let Int32 = Int32
+    let Int64 = Int64
+    let UInt8 = UInt8
+    let UInt16 = UInt16
+    let UInt32 = UInt32
+    let UInt64 = UInt64
+
+    let Equatable = Equatable
+    let Comparable = Comparable
+
+    let Boolean = Boolean
+    let Int = Int
+    let Byte = Byte
+    let Float32 = Float32
+    let Float64 = Float64
+
+    let Reference = Reference
+    let ArrayElement = ArrayElement
+    let Array = Array
+>
