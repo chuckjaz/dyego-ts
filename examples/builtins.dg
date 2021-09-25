@@ -1,7 +1,25 @@
+let Operators = <|
+  postfix operator (`++`, `--`, `?.`, `?`) right,
+  prefix operator (`+`, `-`, `--`, `++`) right,
+  infix operator (`as`, `as?`) left,
+  infix operator (`*`, `/`, `%`) left,
+  infix operator (`+`, `-`) left,
+  infix operator `..` left,
+  infix operator identifiers left,
+  infix operator `?:` left,
+  infix operator (`in`, `!in`, `is`, `!is`) left,
+  infix operator (`<`, `>`, `>=`, `<=`) left,
+  infix operator (`==`, `!=`) left,
+  infix operator `&&` left,
+  infix operator `||` left,
+  infix operator (`=`, `+=`, `*=`, `/=`, `%=`) right
+|>
+
+...Operators
+
 let Inst = Uint16
 let Size = UInt64
-
-ket rt = <
+let rt = <
     let bool = <
         let size: Size = 1
         let base: Inst = 0x0000
@@ -272,6 +290,14 @@ let Locatable = <*
     let `@store.local`: { this: This, local: LocalIndex }
 *>
 
+let Defaultable = <*
+    let `@default`: This
+*>
+
+let Default = < value: This ->
+    let `@default`: This = value
+>
+
 let LocationInstructions = <*
     let load: Inst
     let store: Inst
@@ -491,6 +517,7 @@ let Boolean = <
     ...InternalSized<Instructions: rt.bool>
     ...InternalLocation<T: Boolean, Instructions: rt.bool>
     ...InternalEquatable<T:  Boolean, Instructions: rt.bool>
+    ...Default<false>
     let `!`: {! this: Boolean -> Boolean } = { this, rt.bool.not }
 >
 
@@ -500,6 +527,7 @@ let Int8 = <
     ...InternalToInt32<T: Int8, Instructions: rt.int8>
     ...InternalToInt34<T: Int8, Instructions: rt.int8>
     ...InternalToUnsigned<T: Int8, UnsignedType: UInt8, Instructions: rt.int8>
+    ...Default<value: 0t>
 >
 
 let Int16 = <
@@ -508,6 +536,7 @@ let Int16 = <
     ...InternalToInt32<T: Int16, Instructions: rt.int16>
     ...InternalToInt64<T: Int16, Instrucitons: rt.int16>
     ...InternalToUnsigned<T: Int16, UnsignedType: UInt16, Instructions: rt.int16>
+    ...Default<value: 0s>
 >
 
 let Int32 = <
@@ -516,6 +545,7 @@ let Int32 = <
     ...InternalToInt16<T: Int32, Instructions: rt.int32>
     ...InternalToInt64<T: Int32, Instrucitons: rt.int32>
     ...InternalToUnsigned<T: Int32, UnsignedType: UInt32, Instructions: rt.int32>
+    ...Default<value: 0>
 >
 
 let Int64 = <
@@ -524,6 +554,7 @@ let Int64 = <
     ...InternalToInt16<T: Int64, Instructions: rt.int64>
     ...InternalToInt32<T: Int64, Instrucitons: rt.int64>
     ...InternalToUnsigned<T: Int64, UnsignedType: UInt64, Instructions: rt.int64>
+    ...Default<value: 0l>
 >
 
 let UInt8 = <
@@ -532,30 +563,34 @@ let UInt8 = <
     ...InternalToInt32<T: UInt8, Instructions: rt.uint8>
     ...InternalToInt34<T: UInt8, Instructions: rt.uint8>
     ...InternalToSigned<T: UInt8, SignedType: Int8, Instructions: rt.uint8>
+    ...Default<value: 0ut>
 >
 
-let Int16 = <
+let UInt16 = <
     ...InternalInteger<T: UInt16, Instructions: rt.uint16>
     ...InternalToInt8<T: UInt16, Instructions: rt.uint16>
     ...InternalToInt32<T: UInt16, Instructions: rt.uint16>
     ...InternalToInt64<T: UInt16, Instrucitons: rt.uint16>
     ...InternalToSigned<T: UInt16, SignedType: Int16, Instructions: rt.uint16>
+    ...Default<value: 0us>
 >
 
-let Int32 = <
+let UInt32 = <
     ...InternalInteger<T: UInt32, Instructions: rt.uint32>
     ...InternalToInt8<T: UInt32, Instructions: rt.uint32>
     ...InternalToInt16<T: UInt32, Instructions: rt.uint32>
     ...InternalToInt64<T: UInt32, Instrucitons: rt.uint32>
     ...InternalToSigned<T: UInt32, SignedType: Int32, Instructions: rt.uint32>
+    ...Default<value: 0u>
 >
 
-let Int64 = <
+let UInt64 = <
     ...InternalInteger<T: UInt64, Instructions: rt.uint64>
     ...InternalToInt8<T: UInt64, Instructions: rt.uint64>
     ...InternalToInt16<T: UInt64, Instructions: rt.uint64>
     ...InternalToInt32<T: UInt64, Instrucitons: rt.uint64>
     ...InternalToSigned<T: UInt64, SignedType: Int64, Instructions: rt.uint64>
+    ...Default<value: 0ul>
 >
 
 let FloatingPointInstructions = <*
@@ -573,12 +608,14 @@ let InternalFloatingPoint = <
 
 let Float32 = <
     ...InternalFloatingPoint<T: Float32, Instructions: rt.float32>
+    ...Default<value: 0.0f>
     let toFloat64: { this: Float32 -> Float64 } = {! this, tr.float32.to64 !}
     let toDouble: { this: Float32 -> Float64 } = {! this, tr.float32.to64 !}
 >
 
 let Float64 = <
     ...InternalFloatingPoint<T: Float32, Instructions: rt.float32>
+    ...Default<value: 0.0>
     let toFloat32: { this: Float64 -> Float64 } = {! this, tr.float64.to32 !}
 >    
 
@@ -637,4 +674,5 @@ let Array = <
     let Reference = Reference
     let ArrayElement = ArrayElement
     let Array = Array
+    let Operators = Operators
 >

@@ -1,0 +1,98 @@
+file:                               sequence
+sequence:                           sequence-part (COMMA sequence-part)* [COMMA]
+sequence-part:                      SPREAD (vocabulary-reference | module-reference | vocabulary-literal) |
+                                    loop-statement |
+                                    while-statement |
+                                    break-statement |
+                                    continue-statement |
+                                    return-statement |
+                                    expression
+
+vocabulary-reference:               name (SCOPE name)*
+name:                               IDENTIFIER
+module-reference:                   name (SCOPE name)*
+voculary-literal:                   LTBAR [vocabulary-members] BARLT
+vocabulary-members:                 vocabulary-member (COMMA vocabulary-member)* [COMMA]
+vocabulary-member:                  vocabulary-operator-declaration |
+                                    vocabulary-callable-declaration |
+                                    SPLAT vocabulary-reference
+vocabulary-operator-declaration:    (INFIX | POSTFIX | PREFIX) OPERATOR vocabulary-names
+                                        [vocabulary-precedence] [LEFT | RIGHT]
+vocabulary-names:                   IDENTIFIER |
+                                    IDENTIFIERS |
+                                    LPAREN identifier-list RPAREN
+identifier-list:                    name (COMMA name)* [COMMA]
+expression:                         simple-expression simple-expression*
+simple-expression:                  primitive (selector | call | lambda)*
+primitive:                          LITERAL |
+                                    initalizer |
+                                    lambda |
+                                    definition |
+                                    when-expression |
+                                    if-expression |
+                                    LPAREN expression RPAREN
+selector:                           DOT name
+call:                               [LT type-arguments GT] LPAREN [arguments] RPAREN
+type-arguments:                     type-argument (COMMA type-argument)*
+type-argument:                      [name] COLON (type-reference | constant-expression)
+argument:                           [name] COLON expression |
+                                    SPLAT expression
+if-expression:                      IF LPAREN expression RPAREN expression [ELSE expression]
+when-expression:                    WHEN [LPAREN expression RPAREN] 
+                                        LBRACE when-clause (COMMA when-clause)* [COMMA] RBRACE
+when-clause:                        expression ARROW expression |
+                                    ELSE ARROW expression
+initialier:                         array-value-initializer |
+                                    array-entity-initializer |
+                                    value-initializer |
+                                    entity-initializer
+value-array-initalizer:             LBRACK [array-elements] RBRACK
+entity-array-intializer:            LBRACKBANG [array-elements] BANGRBRACK
+array-elements:                     array-element (COMMA array-element)* [COMMA]
+array-element:                      expression |
+                                    SPLAT expression
+value-initializer:                  LBRACK [member-initalizers] RBRACK
+entity-initializer:                 LBRACKBANG [member-initializers] BANGRBRACK
+member-initializers:                member-initializer (COMMA member-initializer)* [COMMA]
+member-initializer:                 [name] COLON expression |
+                                    SPLAT expression
+lambda:                             RBRACE [formal-parameters ARROW] sequence LBRACE
+formal-parameters:                  formal-parmater (COMMA formal-parameter)* [COMMA]
+formal-parameter:                   name [COLON type-reference]
+declaration:                        val-declaration |
+                                    var-declaration |
+                                    let-declaration
+val-declaration:                    VAL name [COLON type-reference] [EQ expression]
+var-declaration:                    VAR name [COLON type-reference] [EQ expression]
+let-declaration:                    LET name [COLON type-reference] EQ let-value
+let-value:                          expression |
+                                    type-reference |
+                                    type-literal |
+                                    type-constraint-literal
+type-reference:                     type-or-reference (AND type-reference)*
+type-or-reference:                  type-reference-simple (OR type-or-reference)*
+type-simple-reference:              type-primitive-reference array-type-modifier* [nullable-type-modifier]
+array-type-modifier:                LBRACK [constant-expression (COMMA constant-expression)*] RBRACK
+nullable-type-modifier:             QUESTION
+type-primitive-reference:           NAME (DOT NAME)* [type-arguments] |
+                                    THISTYPE |
+                                    LPAREN type-reference RPAREN
+type-literal:                       LT [formal-type-parameters ARROW] [type-members] GT
+formal-type-parameters:             formal-type-parameter (COMMA formal-type-parameter)*
+formal-type-parameter:              name COLON type-constaint
+type-constraint:                    TYPE |
+                                    type-reference |
+                                    type-literal |
+                                    type-constraint-literal
+type-members:                       type-member (COMMA type-member)* [COMMA]
+type-member:                        let-declaration |
+                                    var-declaration |
+                                    let-declaration |
+                                    SPLAT type-reference
+type-constraint-literal:            LTSTAR [formal-type-parameters] [type-members] STARLT
+
+loop-statement:                     LOOP [name] expression
+while-statement:                    WHILE [name] LPAREN expression RPAREN expression
+break-statement:                    BREAK [name]
+continue-statement:                 CONTINUE [name]
+return-statement:                   RETIRN [expression]
