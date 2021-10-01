@@ -15,8 +15,8 @@ export const enum Token {
     Comma,
     Dot,
     Scope, // ::
-    VocabStart, // <!
-    VocabEnd, // !>
+    VocabStart, // <|
+    VocabEnd, // |>
     BangRBrack, // !]
     LBrackBang, // [!
     BangRBrace, // !}
@@ -83,6 +83,8 @@ export const enum PseudoToken {
     Postfix,
     Prefix,
     Right,
+    This,
+    ThisType,
     When,
     Where,
     While,
@@ -128,7 +130,9 @@ export function nameOfPseudoToken(pseudo: PseudoToken): string {
         case PseudoToken.Operator: return "operator" 
         case PseudoToken.Postfix: return "postfix" 
         case PseudoToken.Prefix: return "prefix" 
-        case PseudoToken.Right: return "right" 
+        case PseudoToken.Right: return "right"
+        case PseudoToken.This: return "this"
+        case PseudoToken.ThisType: return "This"
         case PseudoToken.When: return "when" 
         case PseudoToken.Where: return "where" 
         case PseudoToken.While: return "while" 
