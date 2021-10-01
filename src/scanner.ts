@@ -394,6 +394,7 @@ export class Scanner {
                     case Code.r:
                     case Code.v:
                     case Code.w:
+                    case Code.T:
                         result = Token.Identifier
                         switch(b) {
                             case Code.a:
@@ -608,15 +609,29 @@ export class Scanner {
                                 }
                                 break
                             case Code.t:
-                                // true
-                                if (src[offset + 0] == Code.r &&
-                                    src[offset + 1] == Code.u &&
-                                    src[offset + 2] == Code.e &&
-                                    !identExtender(src[offset + 3])) {
-                                    offset += 3
-                                    result = Token.True
-                                    this.value = "true"
-                                    break loop
+                                switch(src[offset]) {
+                                    case Code.h:
+                                        // this
+                                        if (src[offset + 1] == Code.i &&
+                                            src[offset + 2] == Code.s &&
+                                            !identExtender(src[offset + 3])) {
+                                            offset += 3
+                                            this.psuedo = PseudoToken.This
+                                            this.value = "this"
+                                            break loop
+                                        }
+                                        break
+                                    case Code.r:
+                                    // true
+                                        if (src[offset + 1] == Code.u &&
+                                            src[offset + 2] == Code.e &&
+                                            !identExtender(src[offset + 3])) {
+                                            offset += 3
+                                            result = Token.True
+                                            this.value = "true"
+                                            break loop
+                                        }
+                                        break
                                 }
                                 break
                             case Code.r:
@@ -714,6 +729,18 @@ export class Scanner {
                                                 break
                                         }
                                         break
+                                }
+                                break
+                            case Code.T:
+                                // This
+                                if (src[offset + 0] == Code.h &&
+                                    src[offset + 1] == Code.i &&
+                                    src[offset + 2] == Code.s &&
+                                    !identExtender(src[offset + 3])) {
+                                    offset += 3
+                                    this.psuedo = PseudoToken.ThisType
+                                    this.value = "This"
+                                    break loop
                                 }
                                 break
                         }

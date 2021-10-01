@@ -1,6 +1,6 @@
 file:                               sequence
 sequence:                           sequence-part (COMMA sequence-part)* [COMMA]
-sequence-part:                      SPREAD (vocabulary-reference | module-reference | vocabulary-literal) |
+sequence-part:                      SPREAD (import-reference | vocabulary-literal) |
                                     loop-statement |
                                     while-statement |
                                     break-statement |
@@ -8,19 +8,19 @@ sequence-part:                      SPREAD (vocabulary-reference | module-refere
                                     return-statement |
                                     expression
 
-vocabulary-reference:               name (SCOPE name)*
+import-reference:                   name (SCOPE name)*
 name:                               IDENTIFIER
-module-reference:                   name (SCOPE name)*
 voculary-literal:                   LTBAR [vocabulary-members] BARLT
 vocabulary-members:                 vocabulary-member (COMMA vocabulary-member)* [COMMA]
 vocabulary-member:                  vocabulary-operator-declaration |
-                                    vocabulary-callable-declaration |
                                     SPLAT vocabulary-reference
 vocabulary-operator-declaration:    (INFIX | POSTFIX | PREFIX) OPERATOR vocabulary-names
                                         [vocabulary-precedence] [LEFT | RIGHT]
 vocabulary-names:                   IDENTIFIER |
                                     IDENTIFIERS |
                                     LPAREN identifier-list RPAREN
+vocabulary-precedece:               (BEFORE | AFTER) [PREFIX | INFIX | POSTFIX] name
+vocabulary-reference:               name (DOT name)*
 identifier-list:                    name (COMMA name)* [COMMA]
 expression:                         simple-expression simple-expression*
 simple-expression:                  primitive (selector | call | lambda)*
