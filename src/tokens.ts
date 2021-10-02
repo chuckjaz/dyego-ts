@@ -165,6 +165,7 @@ export function nameOfPseudoToken(pseudo: PseudoToken): string {
  
 export const enum Literal {
     None,
+    Boolean,
     Int8,
     Int16,
     Int32,
