@@ -1,20 +1,25 @@
+import { 
+    Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement, OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, OperatorAssociativity, ElementKind, childrenOf 
+} from './ast'
 import { Scanner } from "./scanner";
-import { PseudoToken, Token, nameOfToken, nameOfPseudoToken } from "./tokens"
+import { PseudoToken, Token, nameOfToken, nameOfPseudoToken, Literal } from "./tokens"
 
 export function parse(scanner: Scanner) {
     let current = scanner.next()
     let pseudo = scanner.psuedo
     let excluded: boolean[] = []
+    let builder = new ElementBuilder(scanner)
+    const trueExp = builder.Literal(true, Literal.Boolean)
 
     const result = sequence()
     expect(Token.EOF)
     return result
 
-    function sequence() {
+    function sequence(): Element[] {
         return list(sequencePart)
     }
 
-    function sequencePart(): void | null {
+    function sequencePart(): Element | null {
         switch (current) {
             case Token.Identifier:
                 switch (pseudo) {
@@ -55,119 +60,158 @@ export function parse(scanner: Scanner) {
         return null
     }
 
-    function breakStatement() {
+    function breakStatement(): BreakElement {
         expectPseudo(PseudoToken.Break)
-        optionalName()
+        const label = optionalName()
+        return builder.Break(label)
     }
 
-    function continueStatement() {
+    function continueStatement(): ContinueElement {
         expectPseudo(PseudoToken.Continue)
-        optionalName()
+        const label = optionalName()
+        return builder.Continue(label)
     }
 
-    function loopStatement() {
+    function loopStatement(): LoopElement {
         expectPseudo(PseudoToken.Loop)
-        optionalName()
-        block()
+        const label = optionalName()
+        const body = block()
+        return builder.Loop(label, body)
     }
 
-    function whileStatement() {
+    function whileStatement(): Element {
         expectPseudo(PseudoToken.While)
-        optionalName()
-        parenDelimited(expression)
-        block()
+        const label = optionalName()
+        const exp = parenDelimited(expression)
+        const body = block()
+        return builder.Loop(undefined, [
+            builder.When(exp, [
+                builder.WhenValueClause(trueExp, builder.Break(undefined))
+            ]),
+            ...body
+        ])
     }
 
-    function returnStatement() {
+    function returnStatement(): Element {
         expect(Token.Return)
-        optionalExpression()
+        const value = optionalExpression()
+        return builder.Return(value)
     }
 
-    function sequenceSpread() {
+    function sequenceSpread(): Element {
         expectPseudo(PseudoToken.Spread)
         if (current == Token.VocabStart) {
-            return vocabularyLiteral()
+            const ref = vocabularyLiteral()
+            return builder.Spread(ref)
         }
-        return importReference()
+        const ref = importReference()
+        return builder.Spread(ref)
     }
 
-    function vocabularyLiteral() {
+    function vocabularyLiteral(): Element {
         expect(Token.VocabStart)
-        list(vocabularyMember)
+        const members = list(vocabularyMember)
         expect(Token.VocabEnd)
+        return builder.VocabularyLiteral(members)
     }
 
-    function importReference() {
-        name()
+    function importReference(): Element {
+        let result: Element = name()
         while (current == Token.Scope) {
             next()
-            name()
+            const right = name()
+            result = builder.Selection(result, right)
         }
+        return result
     }
 
-    function vocabularyMember() {
+    function vocabularyMember(): Element | null {
         if (current == Token.VocabEnd) return null
         if (pseudo == PseudoToken.Spread) return vocabularySpread()
         return vocabularyOperatorDeclaration()
     }
 
-    function vocabularyOperatorDeclaration() {
+    function vocabularyOperatorDeclaration(): Element {
+        let placement = OperatorPlacement.Unspecified
         switch (pseudo) {
             case PseudoToken.Prefix:
+                pseudo = 0 // intentional because of over narrowing of pseudo
+                next()
+                placement = OperatorPlacement.Prefix
+                break
             case PseudoToken.Infix:
+                pseudo = 0
+                next()
+                placement = OperatorPlacement.Infix
+                break
             case PseudoToken.Postfix:
                 pseudo = 0 // intentional because of over narrowing of pseudo
+                placement = OperatorPlacement.Postfix
                 next()
                 break
             default:
                 report("Expected an operator placement (prefix, infix or postfix)")
         }
         expectPseudo(PseudoToken.Operator)
-        vocabularyNames()
+        const names = vocabularyNames()
+        let precedence: Optional<VocabularyOperatorPrecedence>
         switch(pseudo) {
             case PseudoToken.Before:
             case PseudoToken.After:
-                vocabularyPrecedence()
+                precedence = vocabularyPrecedence()
                 break
         }
+        let associativity = OperatorAssociativity.Unspecified
         switch (pseudo) {
             case PseudoToken.Left:
+                associativity = OperatorAssociativity.Left
+                next()
+                break
             case PseudoToken.Right:
+                associativity = OperatorAssociativity.Right
                 next()
                 break
         }
+        return builder.VocabularyOperatorDeclaration(names, placement, precedence)
     }
 
-    function vocabularySpread() {
+    function vocabularySpread(): Element {
         expectPseudo(PseudoToken.Spread)
-        vocabularyReference()
+        const ref = vocabularyReference()
+        return builder.Spread(ref)
     }
 
-    function vocabularyReference() {
-        name()
+    function vocabularyReference(): Element {
+        let left: Element = name()
         while (current == Token.Dot) {
             next()
-            name()
+            const right = name()
+            left = builder.Selection(left, right)
         }
+        return left
     }
 
-    function vocabularyNames() {
+    function vocabularyNames(): Name[] {
         switch (pseudo) {
         case PseudoToken.Identifiers:
-            return next()
+            next()
+            return [builder.Name("identifiers")]
         }
         switch (current) {
             case Token.Identifier:
-                return next()
+                return [name()]
             case Token.LParen:
                 return parenDelimited(() => list(name))
         }
         report("Expected name or names of the operator")
     }
 
-    function vocabularyPrecedence() {
+    function vocabularyPrecedence(): VocabularyOperatorPrecedence {
+        let relation = OperatorPrecedenceRelation.After
         switch (pseudo) {
             case PseudoToken.Before:
+                relation = OperatorPrecedenceRelation.Before
+                // fall-through
             case PseudoToken.After:
                 pseudo = 0
                 next()
@@ -176,77 +220,105 @@ export function parse(scanner: Scanner) {
             // default:
             //     report("Expected before or after")
         }
+        let placement = OperatorPlacement.Unspecified
         switch (pseudo) {
             case PseudoToken.Prefix:
+                next()
+                placement = OperatorPlacement.Prefix
+                break
             case PseudoToken.Infix:
+                next()
+                placement = OperatorPlacement.Infix
+                break
             case PseudoToken.Postfix:
                 next()
+                placement = OperatorPlacement.Postfix
                 break
         }
-        name()
+        const nm = name()
+        return builder.VocabularyOperatorPrecedence(nm, placement, relation)
     }
 
-    function typeLiteral() {
+    function typeLiteral(): Element {
         expectPseudo(PseudoToken.LessThan)
-        optional(() => {
-            list(formalTypeParameter)
+        const typeParameters = optional(() => {
+            const result = list(formalTypeParameter)
             expectPseudo(PseudoToken.Arrow)
-        })
-        list(typeLiteralMember)
+            return result
+        }) || []
+        const members = list(typeLiteralMember)
         expectPseudo(PseudoToken.GreaterThan)
+        return builder.TypeLiteral(typeParameters, members)
     }
 
-    function formalTypeParameter() {
-        name()
-        expect(Token.Colon)
-        typeReference()
+    function formalTypeParameter(): Element {
+        const nm = name()
+        let ty: Optional<Element>
+        if (current == Token.Colon) {
+            next()
+            ty = typeReference()
+        }
+        return builder.TypeParameter(nm, ty)
     }
 
-    function typeReference() {
-        typeOrReference()
+    function typeReference(): Element {
+        let result = typeOrReference()
         while (pseudo == PseudoToken.And) {
             next()
-            typeOrReference()
+            const right = typeOrReference()
+            result = builder.AndType(result, right)
         }
+        return result
     }
 
-    function typeOrReference() {
-        simpleTypeReference()
+    function typeOrReference(): Element {
+        let result = simpleTypeReference()
         while (pseudo == PseudoToken.Bar) {
             next()
-            simpleTypeReference()
+            let right = simpleTypeReference()
+            result = builder.OrType(result, right)
         }
+        return result
     }
 
-    function simpleTypeReference() {
-        typePrimitiveReference()
+    function simpleTypeReference(): Element {
+        let result = typePrimitiveReference()
         while (current == Token.LBrack) {
             next()
             expect(Token.RBrack)
+            result = builder.ArrayType(result)
         }
         if (pseudo == PseudoToken.Question) {
             next()
+            result = builder.OptionalType(result)
         }
+        return result
     }
 
-    function typePrimitiveReference() {
+    function typePrimitiveReference(): Element {
         if (pseudo == PseudoToken.ThisType) {
-            return next()
+            next()
+            return builder.Name("This")
         }
         switch (current) {
             case Token.Identifier:
-                reference()
+                let result = reference()
                 if (pseudo == PseudoToken.LessThan) {
-                    pseudoDelimited(PseudoToken.LessThan, PseudoToken.GreaterThan, typeReference)
+                    const args = pseudoDelimited(
+                        PseudoToken.LessThan, 
+                        PseudoToken.GreaterThan, 
+                        () => { return list(typeReference) }
+                    )
+                    result = builder.TypeConstructor(result, args)
                 }
-                return
+                return result 
             case Token.LParen:
                 return parenDelimited(typeReference)
         }
         report("Expected a type name")
     }
 
-    function typeLiteralMember() {
+    function typeLiteralMember(): Element | null {
         switch (current) {
             case Token.Let:
             case Token.Var:
@@ -260,49 +332,61 @@ export function parse(scanner: Scanner) {
         return null
     }
 
-    function name() {
+    function name(): Name {
         expect(Token.Identifier)
+        return builder.Name(scanner.value as string)
     }
 
-    function optionalName() {
+    function optionalName(): Optional<Name> {
         if (current == Token.Identifier) {
-            name()
+            return name()
         }
+        return undefined
     }
 
-    function block() {
+    function block(): Element[] {
         expect(Token.LBrace)
-        sequence()
+        const result = sequence()
         expect(Token.RBrace)
+        return result
     }
 
-    function delimitedExpression() {
-        expect(Token.LParen)
-        expression()
-        expect(Token.RParen)
+    function expression(): Element {
+        const result = sequenceExpression()
+        if (result === null) report("Expected an expression")
+        return result
     }
 
-    function expression() {
-        while (expressionStart())
-            simpleExpression()
+    function sequenceExpression(): Element | null {
+        let left = simpleExpression()
+        if (left === null) return null
+        while (expressionStart()) {
+            const right = expression()
+            left = builder.Call(left, [right], undefined)
+        }
+        return left
     }
 
-    function simpleExpression() {
-        primitiveExpression()
+    function simpleExpression(): Element | null {
+        let left = primitiveExpression()
+        if (left === null) return null
         simpleLoop: while (true) {
             switch(current) {
                 case Token.Dot:
-                    selector()
+                    const select = selector()
+                    left = builder.Selection(left, select)
                     break
                 case Token.LBrace:
-                    lambda()
+                    const l = lambda()
+                    left = builder.Call(left, [l], [])
                     break
                 case Token.LParen:
-                    call()
+                    left = call(left)
                     break
                 case Token.Symbol:
                     if (pseudo == PseudoToken.LessThan) {
-                        const callResult = optional(() => { call() })
+                        const target = left
+                        const callResult = optional(() => { call(target) })
                         if (callResult !== null)
                             break
                     }
@@ -311,70 +395,100 @@ export function parse(scanner: Scanner) {
                     break simpleLoop
             }
         }
+        return left
     }
 
-    function selector() {
+    function selector(): Name {
         expect(Token.Dot)
-        name()
+        return name()
     }
 
     function lambda() {
         expect(Token.LBrace)
-        optional(() => {
-            list(formalParameter)
-            expectPseudo(PseudoToken.Arrow)
-        })
-        sequence()
-        expect(Token.RBrace)
-    }
-
-    function formalParameter() {
-        name()
-        if (current == Token.Colon) {
-            next()
-            typeReference()
-        }
-    }
-
-    function call() {
+        let typeParameters: Element[] = []
         if (pseudo == PseudoToken.LessThan) {
-            expectPseudo(PseudoToken.LessThan)
-            list(formalTypeParameter)
+            next()
+            typeParameters = list(formalParameter)
             expectPseudo(PseudoToken.GreaterThan)
         }
-        expect(Token.LParen)
-        while (expressionStart() || current == Token.Colon || pseudo == PseudoToken.Spread) {
-            argument()
+        const parameters = optional(() => {
+            const result = list(formalParameter)
+            expectPseudo(PseudoToken.Arrow)
+            return result
+        }) || []
+        const body = sequence()
+        expect(Token.RBrace)
+        let result: Optional<Element>
+        if (current == Token.Colon) {
+            next()
+            result = typeReference() 
         }
-        expect(Token.RParen)
+        return builder.Lambda(parameters, typeParameters, body, result)
     }
 
-    function argument() {
+    function formalParameter(): Element {
+        const nm = name()
+        let ty: Optional<Element>
+        let dflt: Optional<Element>
+        if (current == Token.Colon) {
+            next()
+            ty = typeReference()
+        }
+        if (pseudo == PseudoToken.Equal) {
+            next()
+            dflt = expression()
+        }
+        return builder.Parameter(nm, ty, dflt)
+    }
+
+    function call(target: Element): Element {
+        let typeArguments: Element[] = []
+        if (pseudo == PseudoToken.LessThan) {
+            expectPseudo(PseudoToken.LessThan)
+            typeArguments = list(formalTypeParameter)
+            expectPseudo(PseudoToken.GreaterThan)
+        }
+        let args: Element[] = []
+        if (current != Token.LBrace) {
+            expect(Token.LParen)
+            while (expressionStart() || current == Token.Colon || pseudo == PseudoToken.Spread) {
+                args.push(argument())
+            }
+            expect(Token.RParen)
+        }
+        if (current == Token.LBrace) {
+            args.push(lambda())
+        }
+        return builder.Call(target, args, typeArguments)
+    }
+
+    function argument(): Element {
         switch (current) {
-            case Token.Identifier:
-                name()
-                break
             case Token.Symbol:
-                if (pseudo == PseudoToken.Spread) {
-                    next()
-                    return expression()
-                }
-                break
+                expectPseudo(PseudoToken.Spread)
+                const target = expression()
+                return builder.Spread(target)
         }
+        const nm = name()
         expect(Token.Colon)
-        return expression()
+        const value = expression()
+        return builder.NamedArgument(nm, value)
     }
 
-    function primitiveExpression() {
+    function primitiveExpression(): Element | null {
         switch (current) {
             case Token.Literal:
-                return next()
+                next()
+                return builder.Literal(scanner.value, scanner.literal)
             case Token.True:
-                return next()
+                next()
+                return builder.Literal(true, Literal.Boolean)
             case Token.False:
-                return next()
-            case Token.LBrack:
+                next()
+                return builder.Literal(false, Literal.Boolean)
+            case Token.LBrack: {
                 return first(valueInitializer, valueArrayInitializer)
+            }
             case Token.LBrackBang:
                 return first(entityInitializer, entityArrayInitializer)
             case Token.LBrace:
@@ -384,7 +498,9 @@ export function parse(scanner: Scanner) {
             case Token.Var:
                 return declaration()
             case Token.Symbol:
-                return next()
+                const n = scanner.value as string
+                next()
+                return builder.Name(n)
             case Token.Identifier:
                 switch (pseudo) {
                     case PseudoToken.When:
@@ -392,92 +508,136 @@ export function parse(scanner: Scanner) {
                     case PseudoToken.If:
                         return ifExpression()
                     default:
-                        return next()
+                        return name()
                 }
             case Token.LParen:
                 return parenDelimited(expression)
         }
-    }
-
-    function valueInitializer() {
-        return delimited(Token.LBrack, Token.RBrack, () => { list(memberInitializer) })
-    }
-
-    function valueArrayInitializer() {
-        return delimited(Token.LBrack, Token.RBrack, () => { list(expression) })
-    }
-
-    function entityInitializer() {
-        return delimited(Token.LBrackBang, Token.BangRBrack, () => { list(memberInitializer) })
-    }
-
-    function entityArrayInitializer() {
-        return delimited(Token.LBrackBang, Token.BangRBrack, () => { list(expression) })
-    }
-
-    function memberInitializer() {
-        switch (current) {
-            case Token.Identifier:
-                name()
-                break
-            case Token.Symbol:
-                if (pseudo == PseudoToken.Spread) {
-                    next()
-                    return expression()
-                }
-                break
-        }
-        expect(Token.Colon)
-        return expression()
-    }
-
-    function whenExpression() {
-        expectPseudo(PseudoToken.When)
-        if (current == Token.LParen) {
-            parenDelimited(expression)
-        }
-        expect(Token.LBrace)
-        list(whenClause)
-        expect(Token.RBrace)
-    }
-
-    function whenClause() {
-        if (pseudo == PseudoToken.Else) {
-            next()
-            expectPseudo(PseudoToken.Arrow)
-            return expression()
-        }
-        exclude(PseudoToken.Arrow, () => expression())
-        expectPseudo(PseudoToken.Arrow)
-        return expression()
-    }
-
-    function ifExpression() {
-        expectPseudo(PseudoToken.If)
-        parenDelimited(expression)
-        exclude(PseudoToken.Else, () => expression())
-        if (pseudo == PseudoToken.Else) {
-            next()
-            expression()
-        }
-    }
-
-    function optionalExpression() {
-        if (expressionStart()) {
-            expression()
-        }
         return null
     }
 
-    function reference() {
-        name()
-        while (current == Token.Dot) {
-            next()
-            name()
-        }
+    function valueInitializer(): Element {
+        const members = delimited(Token.LBrack, Token.RBrack, () => { return list(memberInitializer) })
+        return builder.ValueLiteral(members)
     }
 
-    function declaration() {
+    function valueArrayInitializer(): Element {
+        const elements = delimited(Token.LBrack, Token.RBrack, () => { return list(expression) })
+        return builder.ValueArrayLiteral(elements)
+    }
+
+    function entityInitializer(): Element {
+        const members = delimited(Token.LBrackBang, Token.BangRBrack, () => { 
+            return list(memberInitializer) 
+        })
+        return builder.EntityLiteral(members)
+    }
+
+    function entityArrayInitializer() {
+        const elements = delimited(Token.LBrackBang, Token.BangRBrack, () => { 
+            return list(expression) 
+        })
+        return builder.EntityArrayLiteral(elements)
+    }
+
+    function lastOf(element: Element): Element | null {
+        let last: Element | null = null
+        for (const child of childrenOf(element)) {
+            last = child
+        }
+        return last
+    }
+
+    function rightMostNameOf(element: Element | null): Name | null {
+        if (element === null) return null
+        if (element.kind === ElementKind.Name)
+            return element
+        return rightMostNameOf(lastOf(element))
+    }
+
+    function memberInitializer(): Element | null {
+        if (!expressionStart() && current != Token.Colon) return null
+        switch (current) {
+            case Token.Symbol:
+                if (pseudo == PseudoToken.Spread) {
+                    next()
+                    const value = expression()
+                    return builder.Spread(value)
+                }
+                break
+            case Token.Colon:
+                next()
+                const value = expression()
+                const n = rightMostNameOf(value)
+                if (n === null) {
+                    report("Expected a name as the right most symbol")
+                }
+                return builder.NamedMemberInitializer(n, value)
+        }
+
+        const n = name()
+        expect(Token.Colon)
+        const value = expression()
+        return builder.NamedMemberInitializer(n, value)
+    }
+
+    function whenExpression(): WhenElement {
+        expectPseudo(PseudoToken.When)
+        let exp: Optional<Element>
+        if (current == Token.LParen) {
+            exp = parenDelimited(expression)
+        }
+        expect(Token.LBrace)
+        const clauses = list(whenClause)
+        expect(Token.RBrace)
+        return builder.When(exp, clauses)
+    }
+
+    function whenClause(): Element {
+        if (pseudo == PseudoToken.Else) {
+            next()
+            expectPseudo(PseudoToken.Arrow)
+            const body = expression()
+            return builder.WhenElseClause(body)
+        }
+        const value = exclude(PseudoToken.Arrow, () => expression())
+        expectPseudo(PseudoToken.Arrow)
+        const body = expression()
+        return builder.WhenValueClause(value, body)
+    }
+
+    function ifExpression(): Element {
+        expectPseudo(PseudoToken.If)
+        const exp = parenDelimited(expression)
+        const thenBody = exclude(PseudoToken.Else, () => expression())
+        const clauses: Element[] = [builder.WhenValueClause(trueExp,  thenBody)]
+        if (pseudo == PseudoToken.Else) {
+            next()
+            const elseBody = expression()
+            clauses.push(builder.WhenElseClause(elseBody))
+        }
+        return builder.When(exp, clauses)
+    }``
+
+    function optionalExpression(): Optional<Element> {
+        let result: Optional<Element>
+        if (expressionStart()) {
+            result = expression()
+        }
+        return result
+    }
+
+    function reference(): Element {
+        let result: Element = name()
+        while (current == Token.Dot) {
+            next()
+            const member = name()
+            result = builder.Selection(result, member)
+        }
+        return result
+    }
+
+    function declaration(): Element {
         switch (current) {
             case Token.Let:
                 return letDeclaration()
@@ -489,50 +649,58 @@ export function parse(scanner: Scanner) {
         report("Expected a declaration")
     }
 
-    function letDeclaration() {
+    function letDeclaration(): Element {
         expect(Token.Let)
-        name()
-        optionalType()
+        const nm = name()
+        const ty = optionalType()
         expectPseudo(PseudoToken.Equal)
         switch (current) {
             case Token.VocabStart:
-                return vocabularyLiteral()
+                const initializer = vocabularyLiteral()
+                return builder.LetDeclaration(nm, ty, initializer)
             case Token.Symbol:
                 if (pseudo == PseudoToken.LessThan) {
-                    return typeLiteral()
+                    const initializer = typeLiteral()
+                    return builder.LetDeclaration(nm, ty, initializer)
                 }
-                // fall-through
-            default:
-                return expression()
+                break
         }
+        const initializer = expression()
+        return builder.LetDeclaration(nm, ty, initializer)
     }
 
-    function valDeclaration() {
+    function valDeclaration(): Element {
         expect(Token.Val)
-        name()
-        optionalType()
-        optionalInitializer()
+        const nm = name()
+        const ty = optionalType()
+        const initializer = optionalInitializer()
+        return builder.ValDeclaration(nm, ty, initializer)
     }
 
     function varDeclaration() {
         expect(Token.Var)
-        name()
-        optionalType()
-        optionalInitializer()
+        const nm = name()
+        const ty = optionalType()
+        const initializer = optionalInitializer()
+        return builder.VarDeclaration(nm, ty, initializer)
     }
 
-    function optionalType() {
+    function optionalType(): Optional<Element> {
+        let result: Optional<Element>
         if (current == Token.Colon) {
             next()
-            typeReference()
+            result = typeReference()
         }
+        return result
     }
 
-    function optionalInitializer() {
+    function optionalInitializer(): Optional<Element> {
+        let result: Optional<Element>
         if (pseudo == PseudoToken.Equal) {
             next()
-            expression()
+            result = expression()
         }
+        return result
     }
 
     function next() {
@@ -600,9 +768,11 @@ export function parse(scanner: Scanner) {
         return null
     }
 
-    function yes() { }
-    function optional<T>(element: () => T | void | null): T | null | void {
-        return first(element, yes)
+    function yes() { return undefined }
+    function optional<T>(element: () => T | null | undefined): Optional<T> {
+        const result = first(element, yes)
+        if (result === null) return undefined
+        return result
     }
 
     function report(error: string): never {
