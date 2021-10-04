@@ -236,8 +236,9 @@ export enum OperatorPrecedenceRelation {
 export interface VocabularyOperatorDeclarationElement {
     kind: ElementKind.VocabularyOperatorDeclaration
     names: Name[]
-    placement: Optional<OperatorPlacement>
+    placement: OperatorPlacement
     precedence: Optional<VocabularyOperatorPrecedence>
+    associativity: OperatorAssociativity
 }
 
 export interface VocabularyOperatorPrecedence {
@@ -511,14 +512,16 @@ export class ElementBuilder {
 
     VocabularyOperatorDeclaration(
         names: Name[],
-        placement: Optional<OperatorPlacement>,
-        precedence: Optional<VocabularyOperatorPrecedence>   
+        placement: OperatorPlacement,
+        precedence: Optional<VocabularyOperatorPrecedence>,
+        associativity: OperatorAssociativity
     ): VocabularyOperatorDeclarationElement {
         return { 
             kind: ElementKind.VocabularyOperatorDeclaration,
             names,
             placement,
-            precedence
+            precedence,
+            associativity
         }
     }
 
