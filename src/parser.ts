@@ -1,5 +1,5 @@
-import { 
-    Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement, OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, OperatorAssociativity, ElementKind, childrenOf 
+import {
+    Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement, OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, OperatorAssociativity, ElementKind, childrenOf
 } from './ast'
 import { Scanner } from "./scanner";
 import { PseudoToken, Token, nameOfToken, nameOfPseudoToken, Literal } from "./tokens"
@@ -172,7 +172,7 @@ export function parse(scanner: Scanner) {
                 next()
                 break
         }
-        return builder.VocabularyOperatorDeclaration(names, placement, precedence)
+        return builder.VocabularyOperatorDeclaration(names, placement, precedence, associativity)
     }
 
     function vocabularySpread(): Element {
@@ -305,13 +305,13 @@ export function parse(scanner: Scanner) {
                 let result = reference()
                 if (pseudo == PseudoToken.LessThan) {
                     const args = pseudoDelimited(
-                        PseudoToken.LessThan, 
-                        PseudoToken.GreaterThan, 
+                        PseudoToken.LessThan,
+                        PseudoToken.GreaterThan,
                         () => { return list(typeReference) }
                     )
                     result = builder.TypeConstructor(result, args)
                 }
-                return result 
+                return result
             case Token.LParen:
                 return parenDelimited(typeReference)
         }
@@ -333,8 +333,12 @@ export function parse(scanner: Scanner) {
     }
 
     function name(): Name {
-        expect(Token.Identifier)
-        return builder.Name(scanner.value as string)
+        if (current == Token.Identifier) {
+            const value = scanner.value as string
+            next()
+            return builder.Name(value)
+        }
+        report("Expected an identifier")
     }
 
     function optionalName(): Optional<Name> {
@@ -421,7 +425,7 @@ export function parse(scanner: Scanner) {
         let result: Optional<Element>
         if (current == Token.Colon) {
             next()
-            result = typeReference() 
+            result = typeReference()
         }
         return builder.Lambda(parameters, typeParameters, body, result)
     }
@@ -527,15 +531,15 @@ export function parse(scanner: Scanner) {
     }
 
     function entityInitializer(): Element {
-        const members = delimited(Token.LBrackBang, Token.BangRBrack, () => { 
-            return list(memberInitializer) 
+        const members = delimited(Token.LBrackBang, Token.BangRBrack, () => {
+            return list(memberInitializer)
         })
         return builder.EntityLiteral(members)
     }
 
     function entityArrayInitializer() {
-        const elements = delimited(Token.LBrackBang, Token.BangRBrack, () => { 
-            return list(expression) 
+        const elements = delimited(Token.LBrackBang, Token.BangRBrack, () => {
+            return list(expression)
         })
         return builder.EntityArrayLiteral(elements)
     }
@@ -644,7 +648,7 @@ export function parse(scanner: Scanner) {
             case Token.Val:
                 return valDeclaration()
             case Token.Var:
-                return varDeclaration() 
+                return varDeclaration()
         }
         report("Expected a declaration")
     }
@@ -707,7 +711,7 @@ export function parse(scanner: Scanner) {
         current = scanner.next()
         pseudo = scanner.psuedo
     }
-    
+
     function separator(): boolean {
         if (current == Token.Comma) {
             next()
@@ -741,7 +745,7 @@ export function parse(scanner: Scanner) {
             const r = element()
             if (r === null) break
             result.push(r)
-            if (!separator()) break    
+            if (!separator()) break
         }
         return result
     }
@@ -757,7 +761,7 @@ export function parse(scanner: Scanner) {
                 const result = element()
                 if (result !== null) return result
             } catch (e) {
-               if (!err) err = e 
+               if (!err) err = e
             }
             scanner = cloned
             current = clonedCurrent

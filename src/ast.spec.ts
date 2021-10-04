@@ -4,7 +4,8 @@ import {
     ElementKind,
     OperatorPlacement, 
     OperatorPrecedenceRelation,
-    childrenOf
+    childrenOf,
+    OperatorAssociativity
 } from "./ast"
 import { Literal } from "./tokens"
 
@@ -242,7 +243,7 @@ describe("ast", () => {
                 t, OperatorPlacement.Infix, OperatorPrecedenceRelation.After
             )
             const n = builder.VocabularyOperatorDeclaration(
-                [], OperatorPlacement.Infix, p
+                [], OperatorPlacement.Infix, p, OperatorAssociativity.Left
             )
             expect(n.kind).toBe(ElementKind.VocabularyOperatorDeclaration)
             expect(n.names).toEqual([])
