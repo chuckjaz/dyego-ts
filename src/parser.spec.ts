@@ -1,18 +1,20 @@
+import { childrenOf, Element, ElementBuilder, ElementKind, Name } from "./ast"
 import { parse } from "./parser"
 import { Scanner } from "./scanner"
+import { buildVocabulary, Vocabulary, VocabularyScope } from "./vocabulary"
 
 describe("Parser", () => {
     describe("basics", () => {
         it("can parse an empty string", () => {
             expect(p("")).toEqual([])
-        })    
+        })
     })
     describe("import", () => {
         it("can spread a module reference", () => {
-            p("...module")
+            p("...simple", simpleScope())
         })
         it("can spread a scoped module reference", () => {
-            p("...namespace::module")
+            p("...nested.simple", simpleScope())
         })
         it("can spread a vocabulary literal", () => {
             p("... <| |>")
@@ -71,7 +73,7 @@ describe("Parser", () => {
             })
             it("can parse a continue statement with a label", () => {
                 p("continue label")
-            })    
+            })
         })
         describe("loop", () => {
             it("can parse a loop", () => {
@@ -116,11 +118,11 @@ describe("Parser", () => {
             v("<| infix operator `+=` right |>")
         })
         it("can specify priorty qualifier", () => {
-            v("<| infix operator `+` before `-` left |>")
-            v("<| infix operator `+=` after `-=` right |>")
-            v("<| infix operator `-` before infix `+` |>")
-            v("<| infix operator `-` before prefix `+` |>")
-            v("<| infix operator `-` before postfix`+` |>")
+            v("<| ...simple, infix operator `#` before `*` left |>")
+            v("<| ...simple, infix operator `#=` after `*` right |>")
+            v("<| ...simple, infix operator `#` before infix `+` |>")
+            v("<| ...simple, infix operator `#` before prefix `++` |>")
+            v("<| ...simple, infix operator `#` before postfix`++` |>")
         })
         it("can specify multiple operators", () => {
             v("<| infix operator (`+`, `-`) |>")
@@ -129,7 +131,7 @@ describe("Parser", () => {
             v("<| infix operator identifiers |>")
         })
         it("can spread a vocabulary reference", () => {
-            v("<| ...b.c |>")
+            v("<| ...nested.empty |>")
         })
         it("can detect a incorrect operator declaration", () => {
             ve("<| operator `+` |>", "Expected an operator placement (prefix, infix or postfix) on 1")
@@ -139,10 +141,10 @@ describe("Parser", () => {
         })
 
         function v(source: string) {
-            p(`let a = ${source}`)
+            p(`...simple, let a = ${source}`, simpleScope())
         }
         function ve(source: string, message: string) {
-            e(`let a = ${source}`, message)            
+            e(`let a = ${source}`, message)
         }
     })
     describe("type literal", () => {
@@ -267,11 +269,62 @@ describe("Parser", () => {
                 p("if (a) b")
             })
             it("can parse an if with an else", () => {
-                p("if (a) else b")
+                p("if (a) a else b")
             })
         })
+        describe("unary expression", () => {
+            it("can parse a prefix expression", () => {
+                u("+a")
+            })
+            it("can parse a postfix expression", () => {
+                u("a++")
+            })
+            it("can parse a prefix and postfix exprssion", () => {
+                u("++a++")
+            })
+
+            function u(source: string) {
+                return p(`...simple, ${source}`, simpleScope())
+            }
+        })
+        describe("binary expression", () => {
+            const builder = new ElementBuilder({})
+
+            it("can parse a binary expression", () => {
+                b("a + b")
+            })
+            it("can parse and get right precedence", () => {
+                const r = b("a + b * c + d")
+                validateTree(r,
+                    bin("+",
+                        bin("+",
+                            n("a"),
+                            bin("*",
+                                n("b"),
+                                n("c")
+                            )
+                        ),
+                        n("d")
+                    )
+                )
+            })
+
+            function b(source: string): Element {
+                const r = p(`...simple, ${source}`, simpleScope())
+                if (r && r[1]) return r[1]
+                throw Error("Expected an element")
+            }
+
+            function n(text: string): Name {
+                return builder.Name(text)
+            }
+
+            function bin(text: string, left: Element, right: Element): Element {
+                return builder.Call(builder.Selection(left, builder.Name(text)), [right], [])
+            }
+        })
         it("can parse a parenthised expression", () => {
-            p("(b + c)")
+            p("...simple, (b + c)", simpleScope())
         })
     })
     describe("lambda", () => {
@@ -292,10 +345,45 @@ describe("Parser", () => {
         }
     })
 
-    function p(source: string) {
-        const scanner = new Scanner(source)
-        return parse(scanner)
+    function vs(source: string, scope: VocabularyScope = new VocabularyScope()): Vocabulary {
+        const vocabularyElements = p(source.replace(/'/g, "`"), scope)
+        const vocabularyElement = vocabularyElements[0]
+        if (!vocabularyElement || vocabularyElement.kind != ElementKind.VocabularyLiteral)
+            throw Error("source is not a vocabulary literal")
+        return buildVocabulary(scope, vocabularyElement)
     }
+
+    function simpleScope() {
+        const simple = vs(`
+        <|
+            postfix operator ('++', '--', '?.', '?') right,
+            prefix operator ('+', '-', '--', '++') right,
+            infix operator ('as', 'as?') left,
+            infix operator ('*', '/', '%') left,
+            infix operator ('+', '-') left,
+            infix operator '..' left,
+            infix operator identifiers left,
+            infix operator '?:' left,
+            infix operator ('in', '!in', 'is', '!is') left,
+            infix operator ('<', '>', '>=', '<=') left,
+            infix operator ('==', '!=') left,
+            infix operator '&&' left,
+            infix operator '||' left,
+            infix operator ('=', '+=', '*=', '/=', '%=') right
+        |>`)
+        const empty = vs(`<| |>`)
+        const scope = new VocabularyScope()
+        scope.members.set("simple", simple)
+        scope.members.set("empty", empty)
+        scope.members.set("nested", scope)
+        return scope
+    }
+
+    function p(source: string, scope: VocabularyScope = new VocabularyScope()): Element[] {
+        const scanner = new Scanner(source)
+        return parse(scanner, scope)
+    }
+
     function e(source: string, message: string) {
         const scanner = new Scanner(source)
         let reported = false
@@ -310,3 +398,43 @@ describe("Parser", () => {
         expect(reported).toBe(true)
     }
 })
+
+function validateTree(element: Element, expected: Element) {
+    if (element.kind != expected.kind) {
+        throw Error(`Expected a ${element.kind} received ${expected.kind}`)
+    }
+
+    switch (element.kind) {
+        case ElementKind.Name:
+            if (expected.kind != ElementKind.Name) throw Error()
+            expect(element.text).toBe(expected.text)
+            break
+        case ElementKind.Literal:
+            if (expected.kind != ElementKind.Literal) throw Error()
+            expect(element.literal).toBe(expected.literal)
+            expect(element.value).toBe(expected.value)
+            break
+        case ElementKind.VocabularyOperatorDeclaration:
+            if (expected.kind !=  ElementKind.VocabularyOperatorDeclaration) throw Error()
+            expect(element.associativity).toBe(expected.associativity)
+            expect(element.placement).toBe(expected.placement)
+            expect(element.precedence).toEqual(element.precedence)
+            break
+    }
+
+    const receivedChildren: Element[] = []
+    for (let child of childrenOf(element)) {
+        receivedChildren.push(child)
+    }
+    const expectedChildren: Element[] = []
+    for (let child of childrenOf(expected)) {
+        expectedChildren.push(child)
+    }
+    if (receivedChildren.length != expectedChildren.length) {
+        throw Error("Different number of children received")
+    }
+    for (let i = 0; i < expectedChildren.length; i++) {
+        validateTree(receivedChildren[i], expectedChildren[i])
+    }
+}
+

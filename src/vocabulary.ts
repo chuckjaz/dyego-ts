@@ -1,6 +1,6 @@
-import { 
-    Element, ElementKind, Name, OperatorAssociativity, OperatorPlacement, OperatorPrecedenceRelation, 
-    VocabularyLiteralElement 
+import {
+    Element, ElementKind, Name, OperatorAssociativity, OperatorPlacement, OperatorPrecedenceRelation,
+    VocabularyLiteralElement
 } from './ast'
 
 export class PrecedenceLevel {
@@ -83,7 +83,7 @@ export class VocabularyScope {
     }
 }
 
-class VocabularyEmbeddingContext {
+export class VocabularyEmbeddingContext {
     result = new Vocabulary()
     rootLevel = new PrecedenceLevel()
     lowestLevel = this.rootLevel
@@ -116,7 +116,7 @@ class VocabularyEmbeddingContext {
     embedVocabulary(vocabulary: Vocabulary) {
         const members = vocabulary.members
         for (const member of members.values()) {
-            this.recordOperator(member.name, this.mappedPrecedences(member.levels), member.associativities)   
+            this.recordOperator(member.name, this.mappedPrecedences(member.levels), member.associativities)
         }
         let current = this.rootLevel
         while (current && current.lower) {
@@ -157,48 +157,48 @@ function report(message: string): never {
     throw Error(message)
 }
 
+export function lookupVocabulary(scope: VocabularyScope, element: Element): Vocabulary {
+    function lookupScope(scope: VocabularyScope, element: Element): VocabularyScope {
+        switch (element.kind) {
+            case ElementKind.Name:
+                 const result = scope.get(element.text)
+                 if (result instanceof VocabularyScope) return result
+                 report(`Expected ${element.text} to be a vocabulary scope.`)
+             case ElementKind.Selection:
+                 return lookupScope(lookupScope(scope, element.target), element.member)
+             default:
+                 report(`Unexpected element: ${element}`)
+        }
+    }
+
+    let effectiveScope = scope
+    let effectiveName: Name | null = null
+    switch (element.kind) {
+        case ElementKind.Name:
+            effectiveName = element
+            break
+         case ElementKind.Selection:
+             effectiveScope = lookupScope(scope, element.target)
+             effectiveName = element.member
+             break
+         default:
+             report(`Unexpected element: ${element}`)
+    }
+    if (!effectiveName) report("Internal unexpected error")
+    const result = effectiveScope.get(effectiveName.text)
+    if (result instanceof Vocabulary) return result
+    report(`Expected ${effectiveName.text} to be a vocabulary`)
+ }
+
 export function buildVocabulary(scope: VocabularyScope, literal: VocabularyLiteralElement): Vocabulary {
     const context = new VocabularyEmbeddingContext()
- 
-    function lookupVocabulary(element: Element): Vocabulary {
-       function lookupScope(scope: VocabularyScope, element: Element): VocabularyScope {
-           switch (element.kind) {
-               case ElementKind.Name:
-                    const result = scope.get(element.text)
-                    if (result instanceof VocabularyScope) return result
-                    report(`Expected ${element.text} to be a vocabulary scope.`)
-                case ElementKind.Selection:
-                    return lookupScope(lookupScope(scope, element.target), element.member)
-                default:
-                    report(`Unexpected element: ${element}`)
-           }
-       }
-       
-       let effectiveScope = scope
-       let effectiveName: Name | null = null
-       switch (element.kind) {
-           case ElementKind.Name:
-               effectiveName = element
-               break
-            case ElementKind.Selection:
-                effectiveScope = lookupScope(scope, element.target)
-                effectiveName = element.member
-                break
-            default:
-                report(`Unexpected element: ${element}`)
-       }
-       if (!effectiveName) report("Internal unexpected error")
-       const result = effectiveScope.get(effectiveName.text)
-       if (result instanceof Vocabulary) return result
-       report(`Expected ${effectiveName.text} to be a vocabulary`)
-    }
 
     // Resolve embedded vocabularies
     const members = literal.members
     for (let member of members) {
         switch (member.kind) {
             case ElementKind.Spread:
-                const embeddedVocabulary = lookupVocabulary(member.target)
+                const embeddedVocabulary = lookupVocabulary(scope, member.target)
                 context.embedVocabulary(embeddedVocabulary)
                 break
             case ElementKind.VocabularyOperatorDeclaration:
@@ -222,13 +222,13 @@ export function buildVocabulary(scope: VocabularyScope, literal: VocabularyLiter
                 const precedence = member.precedence
                 if (precedence) {
                     const lookup = context.result.get(precedence.name.text)
-                    if (!lookup) report(`Could not find operator ${precedence.name.text}`)
+                    if (!lookup) report(`Could not find operator "${precedence.name.text}"`)
                     let referencedPlacement = precedence.placement
                     if (referencedPlacement == OperatorPlacement.Unspecified) {
                         for (let p = OperatorPlacement.Prefix; p < OperatorPlacement.Unspecified; p++) {
                             if (lookup.levels[p]) {
                                 if (referencedPlacement != OperatorPlacement.Unspecified) {
-                                    report(`Ambigious operator reference ${precedence.name.text}`)
+                                    report(`Ambigious operator reference "${precedence.name.text}"`)
                                 }
                                 referencedPlacement = p
                             }
@@ -242,7 +242,7 @@ export function buildVocabulary(scope: VocabularyScope, literal: VocabularyLiter
                             break
                         case OperatorPrecedenceRelation.Before:
                             referenceLevel = referenceLevel.makeHigher()
-                            break     
+                            break
                     }
                     level = referenceLevel
                 } else {

@@ -158,9 +158,9 @@ describe("vocabulary", () => {
         return level
     }
 
-    function ve(source: string): VocabularyLiteralElement {
+    function ve(source: string, scope: VocabularyScope): VocabularyLiteralElement {
         const scanner = new Scanner(`let a = ${source.replace(/'/g, "`")}`)
-        const tree = parse(scanner)
+        const tree = parse(scanner, scope)
         for (const element of tree) {
             switch(element.kind) {
                 case ElementKind.LetDeclaration:
@@ -174,7 +174,7 @@ describe("vocabulary", () => {
     }
 
     function v(source: string, scope: VocabularyScope = new VocabularyScope()): Vocabulary {
-        const element = ve(source)
+        const element = ve(source, scope)
         return buildVocabulary(scope, element)
     }
 })

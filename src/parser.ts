@@ -1,19 +1,95 @@
 import {
-    Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement, OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, OperatorAssociativity, ElementKind, childrenOf
+    Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement,
+    OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, SpreadElement,
+    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, SelectionElement
 } from './ast'
-import { Scanner } from "./scanner";
-import { PseudoToken, Token, nameOfToken, nameOfPseudoToken, Literal } from "./tokens"
+import {
+    Scanner
+} from "./scanner";
+import {
+    PseudoToken, Token, nameOfToken, nameOfPseudoToken, Literal
+} from "./tokens"
+import {
+    buildVocabulary, lookupVocabulary, PrecedenceLevel, Vocabulary, VocabularyEmbeddingContext,
+    VocabularyScope
+} from './vocabulary';
 
-export function parse(scanner: Scanner) {
+export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyScope()): Element[] {
     let current = scanner.next()
     let pseudo = scanner.psuedo
     let excluded: boolean[] = []
     let builder = new ElementBuilder(scanner)
+    let context = new VocabularyEmbeddingContext()
+    let vocabulary = context.result
+
     const trueExp = builder.Literal(true, Literal.Boolean)
 
-    const result = sequence()
+    const result = topLevelSequence()
     expect(Token.EOF)
     return result
+
+    function topLevelSequence(): Element[] {
+        return list(topLevelSequencePart)
+    }
+
+    function topLevelSequencePart(): Element | null {
+        if (pseudo == PseudoToken.Spread) {
+            return rootSequenceSpread()
+        }
+        if (current == Token.Let) {
+            return rootLetDeclaration()
+        }
+        return sequencePart()
+    }
+
+    function rootSequenceSpread(): SpreadElement {
+        const result = sequenceSpread()
+        const target = result.target
+        switch (target.kind) {
+            case ElementKind.VocabularyLiteral: {
+                const vocabulary = buildVocabulary(scope, target)
+                context.embedVocabulary(vocabulary)
+                break
+            }
+            case ElementKind.Selection:
+            case ElementKind.Name: {
+                const vocabulary = lookupVocabulary(scope, target)
+                context.embedVocabulary(vocabulary)
+                break
+            }
+        }
+        return result
+    }
+
+    function lookupOptionalVocabulary(scope: VocabularyScope, element: Element): Optional<Vocabulary> {
+        try {
+            return lookupOptionalVocabulary(scope, element)
+        } catch(e) {
+            return undefined
+        }
+    }
+
+    function rootLetDeclaration(): Element {
+        const result = letDeclaration()
+        const initializer = result.initializer
+        if (initializer) {
+            switch (initializer.kind) {
+                case ElementKind.VocabularyLiteral: {
+                    const vocabulary = buildVocabulary(scope, initializer)
+                    scope.members.set(result.name.text, vocabulary)
+                    break
+                }
+                case ElementKind.Selection:
+                case ElementKind.Name: {
+                    const vocabulary = lookupOptionalVocabulary(scope, initializer)
+                    if (vocabulary)
+                        scope.members.set(result.name.text, vocabulary)
+                    break
+                }
+            }
+        }
+        return result
+    }
 
     function sequence(): Element[] {
         return list(sequencePart)
@@ -56,6 +132,8 @@ export function parse(scanner: Scanner) {
                 return declaration()
             case Token.Return:
                 return returnStatement()
+            case Token.VocabStart:
+                return vocabularyLiteral()
         }
         return null
     }
@@ -98,7 +176,7 @@ export function parse(scanner: Scanner) {
         return builder.Return(value)
     }
 
-    function sequenceSpread(): Element {
+    function sequenceSpread(): SpreadElement {
         expectPseudo(PseudoToken.Spread)
         if (current == Token.VocabStart) {
             const ref = vocabularyLiteral()
@@ -117,7 +195,7 @@ export function parse(scanner: Scanner) {
 
     function importReference(): Element {
         let result: Element = name()
-        while (current == Token.Scope) {
+        while (current == Token.Dot) {
             next()
             const right = name()
             result = builder.Selection(result, right)
@@ -362,11 +440,81 @@ export function parse(scanner: Scanner) {
     }
 
     function sequenceExpression(): Element | null {
-        let left = simpleExpression()
-        if (left === null) return null
-        while (expressionStart()) {
-            const right = expression()
-            left = builder.Call(left, [right], undefined)
+        return operatorExpression(context.findLowest())
+    }
+
+    function findOperator(
+        placment: OperatorPlacement,
+        includeIdentifiers: boolean
+    ): Optional<SelectedOperator>  {
+        switch (current) {
+            case Token.Identifier:
+                if (pseudo == PseudoToken.Escaped) {
+                    break
+                }
+                // fallthrough
+            case Token.Symbol:
+                if (excluded[pseudo]) break
+                let text = scanner.value as string
+                let operator = vocabulary.get(text)
+                if (!operator) {
+                    if (
+                        includeIdentifiers &&
+                        placment == OperatorPlacement.Infix &&
+                        pseudo == PseudoToken.Identifiers
+                    ) {
+                        operator = vocabulary.get("identifiers")
+                    }
+                }
+                if (!operator) break
+                const level = operator.levels[placment]
+                if (!level) break
+                const assoc = operator.associativities[placment]
+                if (placment == OperatorPlacement.Postfix) {
+                    text = `postfix ${text}`
+                }
+                const n = builder.Name(text)
+                return new SelectedOperator(n, level, assoc, placment)
+        }
+        return undefined
+    }
+
+    function unaryOp(target: Element, op: SelectedOperator): Element {
+        return builder.Call(builder.Selection(target, op.name), [], [])
+    }
+
+    function binaryOp(target: Element, op: SelectedOperator, right: Element): Element {
+        return builder.Call(builder.Selection(target, op.name), [right], [])
+    }
+
+    function requiredOperatorExpression(level: PrecedenceLevel): Element {
+        const left = operatorExpression(level)
+        if (!left) report("Expected an expression")
+        return left
+    }
+
+    function operatorExpression(level: PrecedenceLevel): Element | null {
+        let op = findOperator(OperatorPlacement.Prefix, false)
+        let left: Element
+        if (op && op.isHigherThan(level)) {
+            next()
+            left = unaryOp(requiredOperatorExpression(op.level), op)
+        } else {
+            const l = simpleExpression()
+            if (!l) return null
+            left = l
+        }
+        op = findOperator(OperatorPlacement.Postfix, false)
+        if (op && op.isHigherThan(level)) {
+            next()
+            left = unaryOp(left, op)
+        }
+        op = findOperator(OperatorPlacement.Infix, scanner.newline < 0)
+        while (op && op.isHigherThan(level)) {
+            next()
+            const right = requiredOperatorExpression(op.level)
+            left = binaryOp(left, op, right)
+            op = findOperator(OperatorPlacement.Infix, scanner.newline < 0)
         }
         return left
     }
@@ -482,8 +630,9 @@ export function parse(scanner: Scanner) {
     function primitiveExpression(): Element | null {
         switch (current) {
             case Token.Literal:
+                const value = scanner.value
                 next()
-                return builder.Literal(scanner.value, scanner.literal)
+                return builder.Literal(value, scanner.literal)
             case Token.True:
                 next()
                 return builder.Literal(true, Literal.Boolean)
@@ -525,8 +674,18 @@ export function parse(scanner: Scanner) {
         return builder.ValueLiteral(members)
     }
 
+    function arrayInitializerElement(): Element {
+        if (pseudo == PseudoToken.Spread) {
+            next()
+            const target = expression()
+            return builder.Spread(target)
+        }
+        return expression()
+    }
     function valueArrayInitializer(): Element {
-        const elements = delimited(Token.LBrack, Token.RBrack, () => { return list(expression) })
+        const elements = delimited(Token.LBrack, Token.RBrack, () => {
+            return list(arrayInitializerElement)
+        })
         return builder.ValueArrayLiteral(elements)
     }
 
@@ -653,7 +812,7 @@ export function parse(scanner: Scanner) {
         report("Expected a declaration")
     }
 
-    function letDeclaration(): Element {
+    function letDeclaration(): NamedMemberElement {
         expect(Token.Let)
         const nm = name()
         const ty = optionalType()
@@ -825,5 +984,29 @@ export function parse(scanner: Scanner) {
                 return true
         }
         return false
+    }
+}
+
+class SelectedOperator {
+    name: Name
+    level: PrecedenceLevel
+    associativity: OperatorAssociativity
+    placement: OperatorPlacement
+
+    constructor(
+        name: Name,
+        level: PrecedenceLevel,
+        associativity: OperatorAssociativity,
+        placement: OperatorPlacement
+    ) {
+        this.name = name
+        this.level = level
+        this.associativity = associativity
+        this.placement = placement
+    }
+
+    isHigherThan(level: PrecedenceLevel): boolean {
+        return (level == this.level && this.associativity == OperatorAssociativity.Right) ||
+            this.level.isHigherThan(level)
     }
 }
