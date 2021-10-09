@@ -1399,7 +1399,6 @@ function symbolExtender(n: number): Boolean {
         case Code.slash:
         case Code.question:
         case Code.bar:
-        case Code.colon:
         case Code.sharp:
             return true
     }

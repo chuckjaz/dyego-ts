@@ -187,11 +187,12 @@ describe("ast", () => {
             ch(n).toEqual([t])
         })
         it("can create a type literal", () => {
-            const n = builder.TypeLiteral([], [])
+            const n = builder.TypeLiteral([], [], v)
             expect(n.kind).toBe(ElementKind.TypeLiteral)
             expect(n.members).toEqual([])
             expect(n.typeParameters).toEqual([])
-            ch(n).toEqual([])
+            expect(n.constraint).toBe(v)
+            ch(n).toEqual([v])
         })
         it("can create an invoke member", () => {
             const n = builder.InvokeMember([t], [v], v)
