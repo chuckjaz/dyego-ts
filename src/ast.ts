@@ -28,6 +28,7 @@ export const enum ElementKind {
     WhenValueClause,
     WhenElseClause,
     TypeLiteral,
+    InvokeMember,
     ConstraintLiteral,
     VocabularyLiteral,
     ArrayType,
@@ -63,6 +64,7 @@ export type Element =
     WhenValueClauseElement |
     WhenElseClauseElement |
     TypeLiteralElement |
+    InvokeMemberElement |
     VocabularyLiteralElement |
     TypeUnaryExpressionElement |
     TypeBinaryExpressionElement |
@@ -199,6 +201,13 @@ export interface TypeLiteralElement {
     kind: ElementKind.TypeLiteral | ElementKind.ConstraintLiteral
     typeParameters: Element[]
     members: Element[]
+}
+
+export interface InvokeMemberElement {
+    kind: ElementKind.InvokeMember
+    typeParameters: Element[]
+    parameters: Element[]
+    result: Optional<Element>
 }
 
 export interface VocabularyLiteralElement {
@@ -350,6 +359,12 @@ export function * childrenOf(element: Element) {
             yield * element.typeParameters
             yield * element.members
             break
+        case ElementKind.InvokeMember:
+            yield * element.typeParameters
+            yield * element.parameters
+            if (element.result)
+                yield element.result
+            break
         case ElementKind.VocabularyLiteral:
             yield * element.members
             break
@@ -492,6 +507,10 @@ export class ElementBuilder {
 
     TypeLiteral(typeParameters: Element[], members: Element[]): TypeLiteralElement {
         return { kind: ElementKind.TypeLiteral, typeParameters, members }
+    }
+
+    InvokeMember(typeParameters: Element[], parameters: Element[], result: Optional<Element>): InvokeMemberElement {
+        return { kind: ElementKind.InvokeMember, typeParameters, parameters, result}
     }
 
     ConstraintLiteral(typeParameters: Element[], members: Element[]): TypeLiteralElement {

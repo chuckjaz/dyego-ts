@@ -166,6 +166,20 @@ describe("Parser", () => {
         it("can use a type literal to export", () => {
             p("< let a = a, let b = b, >")
         })
+        it("can have a simple invoke member", () => {
+            t("< { } >")
+        })
+        it("can parse an invoke member with parameters", () => {
+            t("< { a: Int, b: Int } >")
+        })
+        it("can have an invoke member with a result", () => {
+            t("< { }: Int >")
+            t("< { a: Int, b: Int}: Int >")
+        })
+        it("can have an invoke member with a type parameter", () => {
+            t("< { T -> a: T }: T >")
+            t("< { T, V: Int -> a: T }: T >")
+        })
         function t(source: string) {
             return p(`let a = ${source}`)
         }

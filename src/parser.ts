@@ -1,7 +1,7 @@
 import {
     Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement,
     OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, SpreadElement,
-    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, SelectionElement
+    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, SelectionElement, InvokeMemberElement
 } from './ast'
 import {
     Scanner
@@ -403,12 +403,31 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
             case Token.Var:
             case Token.Val:
                 return declaration()
+            case Token.LBrace:
+                return invokeMember()
         }
         if (pseudo == PseudoToken.Spread) {
             next()
             return typeReference()
         }
         return null
+    }
+
+    function invokeMember(): InvokeMemberElement {
+        expect(Token.LBrace)
+        const typeParameters = optional(() => {
+            const result = list(formalTypeParameter)
+            expectPseudo(PseudoToken.Arrow)
+            return result
+        }) || []
+        const parameters = list(formalParameter)
+        expect(Token.RBrace)
+        let result: Optional<Element> = undefined
+        if (current == Token.Colon) {
+            next()
+            result = typeReference()
+        }
+        return builder.InvokeMember(typeParameters, parameters, result)
     }
 
     function constraintLiteral(): Element {
@@ -624,11 +643,12 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         return builder.Lambda(parameters, typeParameters, body, result)
     }
 
-    function formalParameter(): Element {
+    function formalParameter(): Element | null {
+        if (current != Token.Identifier) return null
         const nm = name()
         let ty: Optional<Element>
         let dflt: Optional<Element>
-        if (current == Token.Colon) {
+        if (current as any == Token.Colon) {
             next()
             ty = typeReference()
         }
@@ -980,6 +1000,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     function first<T>(...elements: (() => T | null)[]): T | null {
         let err: any = undefined
         for (let element of elements) {
+            if (element == yes) return yes()
             const cloned = scanner.clone()
             const clonedCurrent = current
             const clonedPseudo = pseudo
@@ -1001,9 +1022,9 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         return null
     }
 
-    function yes() { return undefined }
+    function yes<T>(): T { return undefined as any as T }
     function optional<T>(element: () => T | null | undefined): Optional<T> {
-        const result = first(element, yes)
+        const result = first(element, yes as () => undefined)
         if (result === null) return undefined
         return result
     }
