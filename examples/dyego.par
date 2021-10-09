@@ -88,7 +88,10 @@ type-members:                       type-member (COMMA type-member)* [COMMA]
 type-member:                        let-declaration |
                                     var-declaration |
                                     let-declaration |
+                                    invoke-memeber |
                                     SPLAT type-reference
+invoke-member:                      LBRACE [formal-type=parameters] formal-parameters 
+                                         RBRACE [COLON type-reference]
 type-constraint-literal:            LTSTAR [formal-type-parameters] [type-members] STARLT
 
 loop-statement:                     LOOP [name] expression

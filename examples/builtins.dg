@@ -273,7 +273,7 @@ let SizedInstructions = <*
 *>
 
 let InternalSized = <
-    Instructions: SizedInstructions 
+    Instructions: SizedInstructions
 ->
     let `@size`: Size = Instrucitons.size
 *>
@@ -283,11 +283,11 @@ let ParameterIndex = UInt8
 let LocalIndex = UInt8
 
 let Locatable = <*
-    let `@load.global`: { address: Address -> This }
-    let `@store.global`: { this: This, address: Address }
-    let `@load.param`: { parameter: ParameterIndex -> This }
-    let `@load.local`: { local: LocalIndex -> This }
-    let `@store.local`: { this: This, local: LocalIndex }
+    let `@load.global`: < { address: Address }: This >
+    let `@store.global`: < { this: This, address: Address } >
+    let `@load.param`: < { parameter: ParameterIndex }: This >
+    let `@load.local`: < { local: LocalIndex }: This >
+    let `@store.local`: < { this: This, local: LocalIndex } >
 *>
 
 let Defaultable = <*
@@ -309,16 +309,16 @@ let LocationInstructions = <*
 let InternalLocation = <
     Instructions: LocationInstructions
 ->
-    let `@load.global`: { address: Address -> This } = {! address, Instructions.load !}
-    let `@store.global`: { this: This, address: Address } = {! this, address, Instructions.store !}
-    let `@load.param`: { parameter: ParameterIndex -> This } = {! this, Instructions.pload !}
-    let `@load.local`: { local: LocalIndex -> This } = {! local, Instructions.lload !}
-    let `@store.local`: { this: This, local: LocalIndex } = {! this, local, Instructions.lstore !}
+    let `@load.global`: < { address: Address }: This > = {! address, Instructions.load !}
+    let `@store.global`: < { this: This, address: Address } > = {! this, address, Instructions.store !}
+    let `@load.param`: < { parameter: ParameterIndex }: This > = {! this, Instructions.pload !}
+    let `@load.local`: < { local: LocalIndex }: This > = {! local, Instructions.lload !}
+    let `@store.local`: < { this: This, local: LocalIndex } > = {! this, local, Instructions.lstore !}
 > : Locatable
 
 let Equatable = <*
-    let `==`: { this: This, other: This -> Boolean }
-    let `!=`: { this: This, other: This -> Boolean }
+    let `==`: < { this: This, other: This }: Boolean >
+    let `!=`: < { this: This, other: This }: Boolean >
 *>
 
 let EqualityInstructions = <*
@@ -329,16 +329,16 @@ let EqualityInstructions = <*
 let InternalEquatable = <
     Instructions: EqualityInstructions
 ->
-    let `==`: { this: This, other: This -> Boolean } = {! this, other, Instructions.eq !}
-    let `!=`: { this: This, other: This -> Boolean } = {! this, other, Instructions.neq !}
+    let `==`: < { this: This, other: This }: Boolean > = {! this, other, Instructions.eq !}
+    let `!=`: < { this: This, other: This }: Boolean > = {! this, other, Instructions.neq !}
 > : Equatable
 
 let Comparable = <*
     ...Equatable
-    let `>`: { this: This, other: This -> Boolean }
-    let `<`: { this: This, other: This -> Boolean }
-    let `>=`: { this: This, other: This -> Boolean }
-    let `<=`: { this: This, other: This -> Boolean }
+    let `>`: < { this: This, other: This }: Boolean >
+    let `<`: < { this: This, other: This }: Boolean >
+    let `>=`: < { this: This, other: This }: Boolean >
+    let `<=`: < { this: This, other: This }: Boolean >
 *>
 
 let ComparableInstructions = <*
@@ -347,17 +347,17 @@ let ComparableInstructions = <*
     let lt: Int
     let gte: Int
     let lte: Int
-    let eq: Int    
+    let eq: Int
 *>
 
 let InternalComparable = <
     Instructions: ComparableInstructions
 ->
     ...InternalEquatable<:Instructions>
-    let `>`: { this: This, other: This -> Boolean } = {! this, other, Instructions.gt !}
-    let `<`: { this: This, other: This -> Boolean } = {! this, other, Instructions.lt !}
-    let `>=`: { this: This, other: This -> Boolean } = {! this, other, Instructions.gte !}
-    let `<=`: { this: This, other: This -> Boolean } = {! this, other, Instructions.lte !}    
+    let `>`: < { this: This, other: This }: Boolean > = {! this, other, Instructions.gt !}
+    let `<`: < { this: This, other: This }: Boolean > = {! this, other, Instructions.lt !}
+    let `>=`: < { this: This, other: This }: Boolean > = {! this, other, Instructions.gte !}
+    let `<=`: < { this: This, other: This }: Boolean > = {! this, other, Instructions.lte !}
 > : Comparable
 
 let NumericInstructions = <*
@@ -371,10 +371,10 @@ let InternalNumeric = <
     T: type
     Instructions: NumericInstructions
 ->
-    let `+`: { this: T, other: T -> T }: {! this, other, Instructions.add !}
-    let `-`: { this: T, other: T -> T }: {! this, other, Instructions.sub !}
-    let `*`: { this: T, other: T -> T }: {! this, other, Instructions.mult !}
-    let `\`: { this: T, other: T -> T }: {! this, other, Instructions.div !}
+    let `+`: < { this: T, other: T }: T > = {! this, other, Instructions.add !}
+    let `-`: < { this: T, other: T }: T > = {! this, other, Instructions.sub !}
+    let `*`: < { this: T, other: T }: T > = {! this, other, Instructions.mult !}
+    let `\`: < { this: T, other: T }: T > = {! this, other, Instructions.div !}
 >
 
 let BitwiseInstructions = <*
@@ -387,13 +387,13 @@ let InternalBitwise = <
     T: type
     Instructions: BitwiseInstructions
 ->
-    let `|`: { this: T, other: T -> T } = {! this, other, Instructions.or !}
-    let `&`: { this: T, other: T -> T } = {! this, other, Instructions.and !}
-    let `^`: { this: T, other: T -> T } = {! this, other, Instructions.xor !}
-    let shl: { this: T, other: Int -> T } = {! this, other, Instructions.shl !}
-    let shr: { this: T, other: Int -> T } = {! this, other, Instructions.shr !}
-    let ror: { this: T, other: Int -> T } = {! this, other, Instructions.ror !}
-    let rol: { this: T, other: Int -> T } = {! this, other, Instructions.rol !}
+    let `|`: < { this: T, other: T }: T > = {! this, other, Instructions.or !}
+    let `&`: < { this: T, other: T }: T > = {! this, other, Instructions.and !}
+    let `^`: < { this: T, other: T }: T > = {! this, other, Instructions.xor !}
+    let shl: < { this: T, other: Int }: T > = {! this, other, Instructions.shl !}
+    let shr: < { this: T, other: Int }: T > = {! this, other, Instructions.shr !}
+    let ror: < { this: T, other: Int }: T > = {! this, other, Instructions.ror !}
+    let rol: < { this: T, other: Int }: T > = {! this, other, Instructions.rol !}
 >
 
 let IntegerInstructions = <
@@ -412,7 +412,7 @@ let InternalInteger = <
     ...InternalComparable<:T, :Instructions>
     ...InternalNumeric<:T, :Instructions>
     ...InternalBitwise<:T, :Instructions>
-    let `%`: { this: T, other: T -> T }: {! this, other, Instructions.mod !}
+    let `%`: < { this: T, other: T }: T > = {! this, other, Instructions.mod !}
 >
 
 let To64Instructions = <*
@@ -423,14 +423,14 @@ let InternalToInt64 = <
     T: type
     Instructions: To64Instructions
 ->
-    let toInt64: { this: T -> Int64 } = {! this, Instructions.to64 !}
+    let toInt64: < { this: T }: Int64 > = {! this, Instructions.to64 !}
 >
 
 let InternalToUInt64 = <
     T: type
     Instructions: To64Instructions
 ->
-    let toInt64: { this: T -> UInt64 } = {! this, Instructions.to64 !}
+    let toInt64: < { this: T }: UInt64 > = {! this, Instructions.to64 !}
 >
 
 let To32Instructions = <*
@@ -441,15 +441,15 @@ let InternalToInt32 = <
     T: type
     Instructions: To32Instructions
 ->
-    let toInt32: { this: T -> Int32 } = {! this, Instructions.to32 !}
-    let toInt:  { this: T -> Int } = {! this, Instructions.to32 !}
+    let toInt32: < { this: T }: Int32 > = {! this, Instructions.to32 !}
+    let toInt: < { this: T }: Int > = {! this, Instructions.to32 !}
 >
 
 let InternalToUInt32 = <
     T: type
     Instrutions: To32Instructions
 ->
-    let toUInt32: { this: T -> UInt32 } = {! this, Instruction.to32 !}
+    let toUInt32: < { this: T }: UInt32 > = {! this, Instruction.to32 !}
 >
 
 let To16Instructions = <*
@@ -460,14 +460,14 @@ let InternalToInt16 = <
     T: type
     Instructions: To16Instructions
 ->
-    let toInt16: { this: T -> Int16 }: {! this, Instructions.to16 !}
+    let toInt16: < { this: T }: Int16 > = {! this, Instructions.to16 !}
 >
 
 let InternalToUInt16 = <
     T: type
     Instrucitons: To16Instructions
 ->
-    let toUInt16: { this: T -> UInt16 }: {! this, Instruction.to16 !}
+    let toUInt16: < { this: T }: UInt16 > = {! this, Instruction.to16 !}
 >
 
 let To8Instructions = <*
@@ -478,15 +478,15 @@ let InternalToInt8 = <
     T: type
     Instruction: To8Instructions
 ->
-    let toInt8: { this: T -> Int8 }: {! this, Instruction.to8 !}
+    let toInt8: < { this: T }: Int8 > = {! this, Instruction.to8 !}
 >
 
 let InternalToUInt8 = <
     T: type
     Instruction: To8Instructions
 ->
-    let toUInt8: { this: T -> UInt8 }: {! this, Instruction.to8 !}
-    let toByte: { this: T -> Byte }: {! this, Instruction.to8 !}
+    let toUInt8: < { this: T }: UInt8 > = {! this, Instruction.to8 !}
+    let toByte: < { this: T }: Byte > = {! this, Instruction.to8 !}
 >
 
 let ToUnsignedInstructions = <*
@@ -498,7 +498,7 @@ let InternalToUnsigned = <
     UnsignedType: type
     Instructions: ToUnsignedInstructions
 ->
-    let toUnsigned = { this: T -> UnsignedType } = {! this, Instructions.unsigned !}
+    let toUnsigned: < { this: T }: UnsignedType > = {! this, Instructions.unsigned !}
 >
 
 let ToSignedInstructions = <*
@@ -510,7 +510,7 @@ let InternalToSigned = <
     SignedType: type
     Instructions: ToUnsignedInstructions
 ->
-    let toSigned = { this: T -> SignedType } = {! this, Instruction.signed !}
+    let toSigned = < { this: T }: SignedType > = {! this, Instruction.signed !}
 >
 
 let Boolean = <
@@ -518,7 +518,7 @@ let Boolean = <
     ...InternalLocation<T: Boolean, Instructions: rt.bool>
     ...InternalEquatable<T:  Boolean, Instructions: rt.bool>
     ...Default<false>
-    let `!`: {! this: Boolean -> Boolean } = { this, rt.bool.not }
+    let `!`: < { this: Boolean }: Boolean > = {! this, rt.bool.not !}
 >
 
 let Int8 = <
@@ -609,15 +609,15 @@ let InternalFloatingPoint = <
 let Float32 = <
     ...InternalFloatingPoint<T: Float32, Instructions: rt.float32>
     ...Default<value: 0.0f>
-    let toFloat64: { this: Float32 -> Float64 } = {! this, tr.float32.to64 !}
-    let toDouble: { this: Float32 -> Float64 } = {! this, tr.float32.to64 !}
+    let toFloat64: < { this: Float32 }: Float64 > = {! this, tr.float32.to64 !}
+    let toDouble: < { this: Float32 }: Float64 > = {! this, tr.float32.to64 !}
 >
 
 let Float64 = <
     ...InternalFloatingPoint<T: Float32, Instructions: rt.float32>
     ...Default<value: 0.0>
-    let toFloat32: { this: Float64 -> Float64 } = {! this, tr.float64.to32 !}
->    
+    let toFloat32: < { this: Float64 }: Float64 > = {! this, tr.float64.to32 !}
+>
 
 let Byte = UInt8
 let Int = Int32
@@ -625,8 +625,8 @@ let Int = Int32
 let Reference = <
     T: InternalLocation
 ->
-    let `*`: { this: This -> T } = {! this, T.`@load` !}
-    let `=`: { this: this, value: T } = {! this, value, T.`@store` }
+    let `*`: < { this: This }: T > = {! this, T.`@load` !}
+    let `=`: < { this: this, value: T } > = {! this, value, T.`@store` }
 >
 
 let ArrayElement = <*
@@ -635,14 +635,14 @@ let ArrayElement = <*
 *>
 
 let Array = <
-    T: ArrayElement, 
+    T: ArrayElement,
     Size: UInt32
 ->
     ...InternalSized<:Size * T.`@size`>
 
     let size: UInt32 = Size
-    let `[]`: { this: This -> Reference<T> } = {!
-        infdex 
+    let `[]`: < { this: This }: Reference<T> > = {!
+        infdex
         T.`@size`
         rt.int32.mult
         This.`@size`

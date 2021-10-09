@@ -193,6 +193,13 @@ describe("ast", () => {
             expect(n.typeParameters).toEqual([])
             ch(n).toEqual([])
         })
+        it("can create an invoke member", () => {
+            const n = builder.InvokeMember([t], [v], v)
+            expect(n.kind).toBe(ElementKind.InvokeMember)
+            expect(n.typeParameters).toEqual([t])
+            expect(n.parameters).toEqual([v])
+            expect(n.result).toEqual(v)
+        })
         it("can create a constraint literal", () => {
             const n = builder.ConstraintLiteral([], [])
             expect(n.kind).toBe(ElementKind.ConstraintLiteral)
