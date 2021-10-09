@@ -21,6 +21,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     let builder = new ElementBuilder(scanner)
     let context = new VocabularyEmbeddingContext()
     let vocabulary = context.result
+    let separatorState = SeperatorState.normal
 
     const trueExp = builder.Literal(true, Literal.Boolean)
 
@@ -505,13 +506,14 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
             left = l
         }
         op = findOperator(OperatorPlacement.Postfix, false)
-        if (op && op.isHigherThan(level)) {
+        if (op && op.isHigherThan(level) && scanner.newline < 0) {
             next()
             left = unaryOp(left, op)
         }
         op = findOperator(OperatorPlacement.Infix, scanner.newline < 0)
         while (op && op.isHigherThan(level)) {
             next()
+            separatorState = SeperatorState.wasInfix
             const right = requiredOperatorExpression(op.level)
             left = binaryOp(left, op, right)
             op = findOperator(OperatorPlacement.Infix, scanner.newline < 0)
@@ -869,14 +871,28 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     function next() {
         current = scanner.next()
         pseudo = scanner.psuedo
+        separatorState = SeperatorState.normal
     }
 
     function separator(): boolean {
         if (current == Token.Comma) {
             next()
             return true
+        } else if (scanner.newline >= 0) {
+            switch (separatorState) {
+                case SeperatorState.wasInfix:
+                case SeperatorState.implied:
+                    return false
+            }
+            if (pseudo != PseudoToken.Escaped) {
+                const op = findOperator(OperatorPlacement.Infix, false)
+                if (op) {
+                    return false
+                }
+            }
+            separatorState = SeperatorState.implied
+            return true
         }
-        // TODO: auto detect
         return false
     }
 
@@ -916,6 +932,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
             const clonedCurrent = current
             const clonedPseudo = pseudo
             const clonedExcluded = excluded.slice()
+            const clonedSeperatorState = separatorState
             try {
                 const result = element()
                 if (result !== null) return result
@@ -926,6 +943,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
             current = clonedCurrent
             pseudo = clonedPseudo
             excluded = clonedExcluded
+            separatorState = clonedSeperatorState
         }
         if (err) throw err
         return null
@@ -1009,4 +1027,10 @@ class SelectedOperator {
         return (level == this.level && this.associativity == OperatorAssociativity.Right) ||
             this.level.isHigherThan(level)
     }
+}
+
+const enum SeperatorState {
+    normal,
+    wasInfix,
+    implied
 }

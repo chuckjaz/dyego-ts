@@ -345,6 +345,35 @@ describe("Parser", () => {
         }
     })
 
+    describe("seperators", () => {
+        it("new lines can imply a seperator", () => {
+            expect(ns(s("a \n b"))).toEqual(["a", "b"])
+        })
+
+        it("an infix operator before a new line prevents a seperator", () => {
+            expect(s("a + \n b").length).toBe(1)
+        })
+
+        it("an infix operator after the new line prevents a seperator", () => {
+            expect(s("a \n + b").length).toBe(1)
+        })
+
+        it("a prefix operator after new line is a seperator", () => {
+            expect(s("a \n --b").length).toBe(2)
+        })
+
+        function s(source: string): Element[] {
+            const scanner = new Scanner(`...simple, ${source}`)
+            return parse(scanner, simpleScope()).slice(1)
+        }
+
+        function ns(names: Element[]) {
+            return names.map(e => {
+                return e.kind == ElementKind.Name ? e.text : ""
+            })
+        }
+    })
+
     function vs(source: string, scope: VocabularyScope = new VocabularyScope()): Vocabulary {
         const vocabularyElements = p(source.replace(/'/g, "`"), scope)
         const vocabularyElement = vocabularyElements[0]
