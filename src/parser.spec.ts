@@ -2,6 +2,7 @@ import { childrenOf, Element, ElementBuilder, ElementKind, Name } from "./ast"
 import { parse } from "./parser"
 import { Scanner } from "./scanner"
 import { buildVocabulary, Vocabulary, VocabularyScope } from "./vocabulary"
+import { readFileSync } from 'fs'
 
 describe("Parser", () => {
     describe("basics", () => {
@@ -230,8 +231,22 @@ describe("Parser", () => {
         it("can specify a This type", () => {
             tr("This")
         })
-        it("can speicfy a generic type", () => {
-            tr("A<B>")
+        describe("generic paraemters", () => {
+            it("can speicfy a generic type", () => {
+                tr("A<:B>")
+            })
+            it("can specify with explict names", () => {
+                tr("A<T: A>")
+            })
+            it("can specify multiple types", () => {
+                tr("A<K: Int, V: String>")
+            })
+            it("can specify a parameter as a literal", () => {
+                tr("Default<Value: true>")
+            })
+            it("can specify a parameter as an expression", () => {
+                p("...simple, var a: InternalSized<Size: (Size * T.`@size`)>", simpleScope())
+            })
         })
         it("can use parens to qualify a type", () => {
             tr("(A)")
@@ -426,6 +441,12 @@ describe("Parser", () => {
         }
     })
 
+    describe("examples", () => {
+        it("can parse the buildins file", () => {
+            f("examples/builtins.dg")
+        })
+    })
+
     function vs(source: string, scope: VocabularyScope = new VocabularyScope()): Vocabulary {
         const vocabularyElements = p(source.replace(/'/g, "`"), scope)
         const vocabularyElement = vocabularyElements[0]
@@ -477,6 +498,12 @@ describe("Parser", () => {
             }
         }
         expect(reported).toBe(true)
+    }
+
+    function f(fileName: string) {
+        const source = readFileSync(fileName)
+        const scanner = new Scanner(source)
+        parse(scanner)
     }
 })
 

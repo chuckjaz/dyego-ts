@@ -21,7 +21,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     let builder = new ElementBuilder(scanner)
     let context = new VocabularyEmbeddingContext()
     let vocabulary = context.result
-    let separatorState = SeperatorState.normal
+    let separatorState = SeparatorState.normal
 
     const trueExp = builder.Literal(true, Literal.Boolean)
 
@@ -319,26 +319,29 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     }
 
     function typeLiteral(): Element {
-        expectPseudo(PseudoToken.LessThan)
-        const typeParameters = optional(() => {
-            const result = list(formalTypeParameter)
-            expectPseudo(PseudoToken.Arrow)
-            return result
-        }) || []
-        const members = list(typeLiteralMember)
-        expectPseudo(PseudoToken.GreaterThan)
-        let constraint: Optional<Element> = undefined
-        if (current == Token.Colon) {
-            next()
-            constraint = typeReference()
-        }
-        return builder.TypeLiteral(typeParameters, members, constraint)
+        return exclude(PseudoToken.GreaterThan, () => {
+            expectPseudo(PseudoToken.LessThan)
+            const typeParameters = optional(() => {
+                const result = list(formalTypeParameter)
+                expectPseudo(PseudoToken.Arrow)
+                return result
+            }) || []
+            const members = list(typeLiteralMember)
+            expectPseudo(PseudoToken.GreaterThan)
+            let constraint: Optional<Element> = undefined
+            if (current == Token.Colon) {
+                next()
+                constraint = typeReference()
+            }
+            return builder.TypeLiteral(typeParameters, members, constraint)
+        })
     }
 
-    function formalTypeParameter(): Element {
+    function formalTypeParameter(): Element | null {
+        if (current != Token.Identifier) return null
         const nm = name()
         let ty: Optional<Element>
-        if (current == Token.Colon) {
+        if (current as any == Token.Colon) {
             next()
             ty = typeReference()
         }
@@ -391,7 +394,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     const args = pseudoDelimited(
                         PseudoToken.LessThan,
                         PseudoToken.GreaterThan,
-                        () => { return list(typeReference) }
+                        () => list(typeArgument)
                     )
                     result = builder.TypeConstructor(result, args)
                 }
@@ -405,6 +408,31 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                 return parenDelimited(typeReference)
         }
         report("Expected a type name")
+    }
+
+    function typeArgument(): Element | null {
+        switch (current) {
+            case Token.Symbol:
+                expectPseudo(PseudoToken.Spread)
+                const target = typeReference()
+                return builder.Spread(target)
+            case Token.Identifier: {
+                const nm = name()
+                expect(Token.Colon)
+                const value = first(() => typeReference(), () => expression())
+                if (!value) return value
+                return builder.NamedArgument(nm, value)
+            }
+            case Token.Colon: {
+                next()
+                const value = first(() => typeReference(), () => expression())
+                if (!value) return value
+                const nm = rightMostNameOf(value)
+                return builder.NamedArgument(nm, value)
+                break
+            }
+        }
+        return null
     }
 
     function typeLiteralMember(): Element | null {
@@ -480,6 +508,14 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                 const ty = typeReference()
                 return builder.ValDeclaration(nm, ty, undefined)
             }
+            case Token.Symbol: {
+                if (pseudo == PseudoToken.Spread) {
+                    next()
+                    const target = typeReference()
+                    return builder.Spread(target)
+                }
+                break
+            }
         }
         return null
     }
@@ -509,7 +545,8 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
 
     function expression(): Element {
         const result = sequenceExpression()
-        if (result === null) report("Expected an expression")
+        if (result === null)
+            report("Expected an expression")
         return result
     }
 
@@ -567,6 +604,17 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         return left
     }
 
+    function infixPossible<T>(block: () => T): T {
+        if (separatorState == SeparatorState.normal) {
+            separatorState = SeparatorState.possibleInfix
+            try {
+                return block()
+            } finally {
+                separatorState = SeparatorState.normal
+            }
+        } else return block()
+    }
+
     function operatorExpression(level: PrecedenceLevel): Element | null {
         let op = findOperator(OperatorPlacement.Prefix, false)
         let left: Element
@@ -586,8 +634,9 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         op = findOperator(OperatorPlacement.Infix, scanner.newline < 0)
         while (op && op.isHigherThan(level)) {
             next()
-            separatorState = SeperatorState.wasInfix
-            const right = requiredOperatorExpression(op.level)
+            separatorState = SeparatorState.wasInfix
+            const level = op.level
+            const right = infixPossible(() => requiredOperatorExpression(level))
             left = binaryOp(left, op, right)
             op = findOperator(OperatorPlacement.Infix, scanner.newline < 0)
         }
@@ -689,11 +738,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         }
         let args: Element[] = []
         if (current != Token.LBrace) {
-            expect(Token.LParen)
-            while (expressionStart() || current == Token.Colon || pseudo == PseudoToken.Spread) {
-                args.push(argument())
-            }
-            expect(Token.RParen)
+            args = delimited(Token.LParen, Token.RParen, () => list(argument))
         }
         if (current == Token.LBrace) {
             args.push(lambda())
@@ -701,17 +746,27 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         return builder.Call(target, args, typeArguments)
     }
 
-    function argument(): Element {
+    function argument(): Element | null {
         switch (current) {
             case Token.Symbol:
                 expectPseudo(PseudoToken.Spread)
                 const target = expression()
                 return builder.Spread(target)
+            case Token.Identifier: {
+                const nm = name()
+                expect(Token.Colon)
+                const value = expression()
+                return builder.NamedArgument(nm, value)
+            }
+            case Token.Colon: {
+                next()
+                const value = expression()
+                const nm = rightMostNameOf(value)
+                return builder.NamedArgument(nm, value)
+                break
+            }
         }
-        const nm = name()
-        expect(Token.Colon)
-        const value = expression()
-        return builder.NamedArgument(nm, value)
+        return null
     }
 
     function primitiveExpression(): Element | null {
@@ -800,11 +855,19 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         return last
     }
 
-    function rightMostNameOf(element: Element | null): Name | null {
-        if (element === null) return null
-        if (element.kind === ElementKind.Name)
-            return element
-        return rightMostNameOf(lastOf(element))
+    function rightMostNameOf(element: Element): Name {
+        function findRightMostNameOf(element: Element | null): Name | null {
+            if (element === null) return null
+            if (element.kind === ElementKind.Name)
+                return element
+            return findRightMostNameOf(lastOf(element))
+        }
+
+        const result = findRightMostNameOf(element)
+        if (result === null) {
+            report("Expected a name as the right most symbol")
+        }
+        return result
     }
 
     function memberInitializer(): Element | null {
@@ -817,13 +880,10 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     return builder.Spread(value)
                 }
                 break
-            case Token.Colon:
+             case Token.Colon:
                 next()
                 const value = expression()
                 const n = rightMostNameOf(value)
-                if (n === null) {
-                    report("Expected a name as the right most symbol")
-                }
                 return builder.NamedMemberInitializer(n, value)
         }
 
@@ -966,7 +1026,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     function next() {
         current = scanner.next()
         pseudo = scanner.psuedo
-        separatorState = SeperatorState.normal
+        separatorState = SeparatorState.normal
     }
 
     function separator(): boolean {
@@ -975,17 +1035,19 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
             return true
         } else if (scanner.newline >= 0) {
             switch (separatorState) {
-                case SeperatorState.wasInfix:
-                case SeperatorState.implied:
+                case SeparatorState.wasInfix:
+                case SeparatorState.implied:
                     return false
+                case SeparatorState.possibleInfix:
+                    if (pseudo != PseudoToken.Escaped) {
+                        const op = findOperator(OperatorPlacement.Infix, false)
+                        if (op) {
+                            return false
+                        }
+                    }
+                    break
             }
-            if (pseudo != PseudoToken.Escaped) {
-                const op = findOperator(OperatorPlacement.Infix, false)
-                if (op) {
-                    return false
-                }
-            }
-            separatorState = SeperatorState.implied
+            separatorState = SeparatorState.implied
             return true
         }
         return false
@@ -999,14 +1061,24 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     }
 
     function parenDelimited<T>(element: () => T): T {
-        return delimited(Token.LParen, Token.RParen, element)
+        return noExclude(() => delimited(Token.LParen, Token.RParen, element))
     }
 
     function pseudoDelimited<T>(start: PseudoToken, end: PseudoToken, element: () => T): T {
         expectPseudo(start)
-        const result = element()
+        const result = exclude(end, () => element())
         expectPseudo(end)
         return result
+    }
+
+    function noExclude<T>(block: () => T) {
+        const savedExcluded = excluded
+        try {
+            excluded = []
+            return block()
+        } finally {
+            excluded = savedExcluded
+        }
     }
 
     function list<T>(element: () => T | null): T[] {
@@ -1125,8 +1197,9 @@ class SelectedOperator {
     }
 }
 
-const enum SeperatorState {
+const enum SeparatorState {
     normal,
     wasInfix,
+    possibleInfix,
     implied
 }

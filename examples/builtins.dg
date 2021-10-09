@@ -276,7 +276,7 @@ let InternalSized = <
     Instructions: SizedInstructions
 ->
     let `@size`: Size = Instrucitons.size
-*>
+>
 
 let Address = UInt32
 let ParameterIndex = UInt8
@@ -342,7 +342,7 @@ let Comparable = <*
 *>
 
 let ComparableInstructions = <*
-    ..EqualityInstructions
+    ...EqualityInstructions
     let gt: Int
     let lt: Int
     let gte: Int
@@ -374,7 +374,7 @@ let InternalNumeric = <
     let `+`: < { this: T, other: T }: T > = {! this, other, Instructions.add !}
     let `-`: < { this: T, other: T }: T > = {! this, other, Instructions.sub !}
     let `*`: < { this: T, other: T }: T > = {! this, other, Instructions.mult !}
-    let `\`: < { this: T, other: T }: T > = {! this, other, Instructions.div !}
+    let `/`: < { this: T, other: T }: T > = {! this, other, Instructions.div !}
 >
 
 let BitwiseInstructions = <*
@@ -396,12 +396,12 @@ let InternalBitwise = <
     let rol: < { this: T, other: Int }: T > = {! this, other, Instructions.rol !}
 >
 
-let IntegerInstructions = <
+let IntegerInstructions = <*
     ...NumericInstructions
     ...ComparableInstructions
     ...BitwiseInstructions
     let mod: Inst
->
+*>
 
 let InternalInteger = <
     T: type
@@ -510,14 +510,14 @@ let InternalToSigned = <
     SignedType: type
     Instructions: ToUnsignedInstructions
 ->
-    let toSigned = < { this: T }: SignedType > = {! this, Instruction.signed !}
+    let toSigned: < { this: T }: SignedType > = {! this, Instruction.signed !}
 >
 
 let Boolean = <
     ...InternalSized<Instructions: rt.bool>
     ...InternalLocation<T: Boolean, Instructions: rt.bool>
     ...InternalEquatable<T:  Boolean, Instructions: rt.bool>
-    ...Default<false>
+    ...Default<Value: false>
     let `!`: < { this: Boolean }: Boolean > = {! this, rt.bool.not !}
 >
 
@@ -626,7 +626,7 @@ let Reference = <
     T: InternalLocation
 ->
     let `*`: < { this: This }: T > = {! this, T.`@load` !}
-    let `=`: < { this: this, value: T } > = {! this, value, T.`@store` }
+    let `=`: < { this: this, value: T } > = {! this, value, T.`@store` !}
 >
 
 let ArrayElement = <*
@@ -635,19 +635,19 @@ let ArrayElement = <*
 *>
 
 let Array = <
-    T: ArrayElement,
+    T: ArrayElement
     Size: UInt32
 ->
-    ...InternalSized<:Size * T.`@size`>
+    ...InternalSized<Size: (Size * T.`@size`)>
 
     let size: UInt32 = Size
-    let `[]`: < { this: This }: Reference<T> > = {!
+    let `[]`: < { this: This }: Reference<:T> > = {!
         infdex
         T.`@size`
         rt.int32.mult
         This.`@size`
         rt.index.validate
-        rt.addr.effective(this)
+        rt.addr.effective(value: this)
         rt.int32.add
     !}
 >
