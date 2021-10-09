@@ -170,6 +170,27 @@ describe("Parser", () => {
             return p(`let a = ${source}`)
         }
     })
+    describe("constraints", () => {
+        it("can parse an empty literal", () => {
+            c("<* *>")
+        })
+        it("can parse a let constraint", () => {
+            c("<* let a: Int *>")
+            c("<* let a: Int = 1 *>")
+        })
+        it("can parse a val cosntraint", () => {
+            c("<* val a: Int *>")
+        })
+        it("can parse a var constraint", () => {
+            c("<* var a: Int *>")
+        })
+        it("can parse a generic constraint", () => {
+            c("<* T: Int, A: type -> let a: Int = T, val a: A *>")
+        })
+        function c(source: string) {
+            return p(`let a = ${source}`)
+        }
+    })
     describe("type reference", () => {
         it("can have a simple type", () => {
             tr("Int")

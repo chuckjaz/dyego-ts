@@ -17,6 +17,8 @@ export const enum Token {
     Scope, // ::
     VocabStart, // <|
     VocabEnd, // |>
+    ConstraintStart, // <*
+    ConstraintEnd, // *>
     BangRBrack, // !]
     LBrackBang, // [!
     BangRBrace, // !}

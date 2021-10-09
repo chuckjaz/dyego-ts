@@ -170,7 +170,7 @@ describe("vocabulary", () => {
             }
 
         }
-        throw Error(`No vocabulary found in "${source}`)
+        throw Error(`No vocabulary found in "${source}"`)
     }
 
     function v(source: string, scope: VocabularyScope = new VocabularyScope()): Vocabulary {

@@ -15,6 +15,7 @@ export const enum ElementKind {
     EntityArrayLiteral,
     NamedMemberInitializer,
     LetDeclaration,
+    ConstraintLetDeclaration,
     VarDeclaration,
     ValDeclaration,
     Lambda,
@@ -39,10 +40,10 @@ export const enum ElementKind {
 
 export type Optional<T> = T | undefined
 
-export type Element = 
-    Name | 
-    LiteralElement | 
-    SelectionElement | 
+export type Element =
+    Name |
+    LiteralElement |
+    SelectionElement |
     SpreadElement |
     BreakElement |
     ContinueElement |
@@ -52,6 +53,7 @@ export type Element =
     ArrayInitalizerElement |
     NamedMemberInitializerElement |
     NamedMemberElement |
+    ConstraintLetDeclarationElement |
     LambdaElement |
     LoopElement |
     ParameterElement |
@@ -94,7 +96,7 @@ export interface SelectionElement {
 
 export interface SpreadElement {
     kind: ElementKind.Spread
-    target: Element 
+    target: Element
 }
 
 export interface BreakElement {
@@ -137,6 +139,12 @@ export interface NamedMemberInitializerElement extends NamedElement {
 export interface NamedMemberElement extends NamedElement {
     kind: ElementKind.LetDeclaration | ElementKind.VarDeclaration | ElementKind.ValDeclaration
     type: Optional<Element>
+    initializer: Optional<Element>
+}
+
+export interface ConstraintLetDeclarationElement extends NamedElement {
+    kind: ElementKind.ConstraintLetDeclaration
+    type: Element
     initializer: Optional<Element>
 }
 
@@ -305,7 +313,7 @@ export function * childrenOf(element: Element) {
                 yield element.result
             break
         case ElementKind.Loop:
-            if (element.label) 
+            if (element.label)
                 yield element.label
             yield * element.body
             break
@@ -434,6 +442,10 @@ export class ElementBuilder {
         return { kind: ElementKind.LetDeclaration, name, type, initializer }
     }
 
+    ConstraintLetDelaration(name: Name, type: Element, initializer: Optional<Element>): ConstraintLetDeclarationElement {
+        return { kind: ElementKind.ConstraintLetDeclaration, name, type, initializer }
+    }
+
     VarDeclaration(name: Name, type: Optional<Element>, initializer: Optional<Element>): NamedMemberElement {
         return { kind: ElementKind.VarDeclaration, name, type, initializer }
     }
@@ -516,7 +528,7 @@ export class ElementBuilder {
         precedence: Optional<VocabularyOperatorPrecedence>,
         associativity: OperatorAssociativity
     ): VocabularyOperatorDeclarationElement {
-        return { 
+        return {
             kind: ElementKind.VocabularyOperatorDeclaration,
             names,
             placement,
@@ -528,7 +540,7 @@ export class ElementBuilder {
     VocabularyOperatorPrecedence(
         name: Name,
         placement: OperatorPlacement,
-        relation: OperatorPrecedenceRelation    
+        relation: OperatorPrecedenceRelation
     ): VocabularyOperatorPrecedence {
         return { name, placement, relation }
     }
