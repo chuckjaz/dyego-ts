@@ -137,6 +137,12 @@ export class Scanner {
                             }
                             break
                         case Code.star:
+                            if (src[offset] == Code.gt && !symbolExtender(src[offset])) {
+                                offset++
+                                result = Token.ConstraintEnd
+                                this.value = "*>"
+                                break loop
+                            }
                             if (!symbolExtender(src[offset])) {
                                 this.psuedo = PseudoToken.Mult
                                 this.value = "*"
@@ -224,6 +230,11 @@ export class Scanner {
                                     offset++
                                     result = Token.VocabStart
                                     this.value = "<|"
+                                    break loop
+                                case Code.star:
+                                    offset++
+                                    result = Token.ConstraintStart
+                                    this.value = "<*"
                                     break loop
                             }
                             if (!symbolExtender(src[offset])) {

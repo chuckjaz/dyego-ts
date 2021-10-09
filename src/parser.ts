@@ -411,6 +411,50 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         return null
     }
 
+    function constraintLiteral(): Element {
+        expect(Token.ConstraintStart)
+        const typeParameters = optional(() => {
+            const result = list(formalTypeParameter)
+            expectPseudo(PseudoToken.Arrow)
+            return result
+        }) || []
+        const members = list(constraintLiteralMember)
+        expect(Token.ConstraintEnd)
+        return builder.ConstraintLiteral(typeParameters, members)
+    }
+
+    function constraintLiteralMember(): Element | null {
+        switch (current) {
+            case Token.Let: {
+                next()
+                const nm = name()
+                expect(Token.Colon)
+                const ty = typeReference()
+                let initializer: Optional<Element> = undefined
+                if (pseudo == PseudoToken.Equal) {
+                    next()
+                    initializer = expression()
+                }
+                return builder.ConstraintLetDelaration(nm, ty, initializer)
+            }
+            case Token.Var: {
+                next()
+                const nm = name()
+                expect(Token.Colon)
+                const ty = typeReference()
+                return builder.VarDeclaration(nm, ty, undefined)
+            }
+            case Token.Val: {
+                next()
+                const nm = name()
+                expect(Token.Colon)
+                const ty = typeReference()
+                return builder.ValDeclaration(nm, ty, undefined)
+            }
+        }
+        return null
+    }
+
     function name(): Name {
         if (current == Token.Identifier) {
             const value = scanner.value as string
@@ -820,9 +864,17 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         const ty = optionalType()
         expectPseudo(PseudoToken.Equal)
         switch (current) {
-            case Token.VocabStart:
+            case Token.VocabStart: {
                 const initializer = vocabularyLiteral()
                 return builder.LetDeclaration(nm, ty, initializer)
+            }
+            case Token.ConstraintStart: {
+                if (ty) {
+                    report("Unexpected type for a constraint")
+                }
+                const initializer = constraintLiteral()
+                return builder.LetDeclaration(nm, undefined, initializer)
+            }
             case Token.Symbol:
                 if (pseudo == PseudoToken.LessThan) {
                     const initializer = typeLiteral()
