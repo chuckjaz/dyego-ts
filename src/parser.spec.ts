@@ -180,6 +180,9 @@ describe("Parser", () => {
             t("< { T -> a: T }: T >")
             t("< { T, V: Int -> a: T }: T >")
         })
+        it("can validate a type literal with a constraint", () => {
+            t("< let a: Int = 1 > : Constraint")
+        })
         function t(source: string) {
             return p(`let a = ${source}`)
         }

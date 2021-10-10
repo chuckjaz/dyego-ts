@@ -327,7 +327,12 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         }) || []
         const members = list(typeLiteralMember)
         expectPseudo(PseudoToken.GreaterThan)
-        return builder.TypeLiteral(typeParameters, members)
+        let constraint: Optional<Element> = undefined
+        if (current == Token.Colon) {
+            next()
+            constraint = typeReference()
+        }
+        return builder.TypeLiteral(typeParameters, members, constraint)
     }
 
     function formalTypeParameter(): Element {
