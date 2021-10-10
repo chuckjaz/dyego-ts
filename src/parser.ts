@@ -628,11 +628,6 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
     function lambda() {
         expect(Token.LBrace)
         let typeParameters: Element[] = []
-        if (pseudo == PseudoToken.LessThan) {
-            next()
-            typeParameters = list(formalParameter)
-            expectPseudo(PseudoToken.GreaterThan)
-        }
         const parameters = optional(() => {
             const result = list(formalParameter)
             expectPseudo(PseudoToken.Arrow)
@@ -640,12 +635,28 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         }) || []
         const body = sequence()
         expect(Token.RBrace)
-        let result: Optional<Element>
+        let result: Optional<Element> = undefined
         if (current == Token.Colon) {
             next()
             result = typeReference()
         }
         return builder.Lambda(parameters, typeParameters, body, result)
+    }
+
+    function intrinsicLambda(): Element {
+        expect(Token.LBraceBang)
+        const parameters = optional(() => {
+            const result = list(formalParameter)
+            expectPseudo(PseudoToken.Arrow)
+        }) || []
+        const body = sequence()
+        expect(Token.BangRBrace)
+        let result: Optional<Element> = undefined
+        if (current == Token.Colon) {
+            next()
+            result = typeReference()
+        }
+        return builder.IntrinsicLambda(parameters, [], body, result)
     }
 
     function formalParameter(): Element | null {
@@ -717,6 +728,8 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                 return first(entityInitializer, entityArrayInitializer)
             case Token.LBrace:
                 return lambda()
+            case Token.LBraceBang:
+                return intrinsicLambda()
             case Token.Let:
             case Token.Val:
             case Token.Var:

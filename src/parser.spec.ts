@@ -382,6 +382,17 @@ describe("Parser", () => {
             p(`let a = ${source}`)
         }
     })
+    describe("intrinsic lambda", () => {
+        it("can parse an empty lambda", () => {
+            l("{! !}")
+        })
+        it("can parse an intrinsic lambda with values", () => {
+            l("{! a.b, c.d !}")
+        })
+        function l(source: string) {
+            p(`let a = ${source}`)
+        }
+    })
 
     describe("seperators", () => {
         it("new lines can imply a seperator", () => {
