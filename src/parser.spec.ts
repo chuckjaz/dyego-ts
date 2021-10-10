@@ -233,6 +233,9 @@ describe("Parser", () => {
         it("can use parens to qualify a type", () => {
             tr("(A)")
         })
+        it("can be a type literal", () => {
+            tr("< let a: Int = 1 >")
+        })
         it("can report a type error", () => {
             tre("+", "Expected a type name on 1")
         })

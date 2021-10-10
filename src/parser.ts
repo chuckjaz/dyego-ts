@@ -391,6 +391,11 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     result = builder.TypeConstructor(result, args)
                 }
                 return result
+            case Token.Symbol:
+                if (pseudo == PseudoToken.LessThan) {
+                    return typeLiteral()
+                }
+                break
             case Token.LParen:
                 return parenDelimited(typeReference)
         }
