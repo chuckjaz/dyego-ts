@@ -23,10 +23,11 @@ vocabulary-precedece:               (BEFORE | AFTER) [PREFIX | INFIX | POSTFIX] 
 vocabulary-reference:               name (DOT name)*
 identifier-list:                    name (COMMA name)* [COMMA]
 expression:                         simple-expression simple-expression*
-simple-expression:                  primitive (selector | call | lambda)*
+simple-expression:                  primitive (selector | call | lambda )*
 primitive:                          LITERAL |
                                     initalizer |
                                     lambda |
+                                    intrinsic-lambda |
                                     definition |
                                     when-expression |
                                     if-expression |
@@ -56,7 +57,8 @@ entity-initializer:                 LBRACKBANG [member-initializers] BANGRBRACK
 member-initializers:                member-initializer (COMMA member-initializer)* [COMMA]
 member-initializer:                 [name] COLON expression |
                                     SPLAT expression
-lambda:                             RBRACE [formal-parameters ARROW] sequence LBRACE
+lambda:                             LBRACE [formal-parameters ARROW] sequence RBRACE
+intrinsic-lambda:                   LBRACEBANG [formal-parameters ARROW] sequcne BANGRBRACE
 formal-parameters:                  formal-parmater (COMMA formal-parameter)* [COMMA]
 formal-parameter:                   name [COLON type-reference]
 declaration:                        val-declaration |

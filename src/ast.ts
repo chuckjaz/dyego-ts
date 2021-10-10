@@ -473,7 +473,7 @@ export class ElementBuilder {
         return { kind: ElementKind.Lambda, parameters, typeParameters, body, result }
     }
 
-    IntrinsicLambda(parameters: Element[], typeParameters: Optional<Element[]>, body: Element[], result: Element): LambdaElement {
+    IntrinsicLambda(parameters: Element[], typeParameters: Optional<Element[]>, body: Element[], result: Optional<Element>): LambdaElement {
         return { kind: ElementKind.IntrinsicLambda, parameters, typeParameters, body, result }
     }
 
