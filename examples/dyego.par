@@ -79,7 +79,7 @@ nullable-type-modifier:             QUESTION
 type-primitive-reference:           NAME (DOT NAME)* [type-arguments] |
                                     THISTYPE |
                                     LPAREN type-reference RPAREN
-type-literal:                       LT [formal-type-parameters ARROW] [type-members] GT
+type-literal:                       LT [formal-type-parameters ARROW] [type-members] GT [COLON type-reference]
 formal-type-parameters:             formal-type-parameter (COMMA formal-type-parameter)*
 formal-type-parameter:              name COLON type-constaint
 type-constraint:                    TYPE |

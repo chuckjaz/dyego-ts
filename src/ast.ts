@@ -64,6 +64,7 @@ export type Element =
     WhenValueClauseElement |
     WhenElseClauseElement |
     TypeLiteralElement |
+    ConstraintLiteralElement |
     InvokeMemberElement |
     VocabularyLiteralElement |
     TypeUnaryExpressionElement |
@@ -198,7 +199,14 @@ export interface WhenElseClauseElement {
 }
 
 export interface TypeLiteralElement {
-    kind: ElementKind.TypeLiteral | ElementKind.ConstraintLiteral
+    kind: ElementKind.TypeLiteral
+    typeParameters: Element[]
+    members: Element[]
+    constraint: Optional<Element>
+}
+
+export interface ConstraintLiteralElement {
+    kind: ElementKind.ConstraintLiteral
     typeParameters: Element[]
     members: Element[]
 }
@@ -355,6 +363,11 @@ export function * childrenOf(element: Element) {
             yield element.body
             break
         case ElementKind.TypeLiteral:
+            yield * element.typeParameters
+            yield * element.members
+            if (element.constraint)
+                yield element.constraint
+            break
         case ElementKind.ConstraintLiteral:
             yield * element.typeParameters
             yield * element.members
@@ -505,15 +518,15 @@ export class ElementBuilder {
         return { kind: ElementKind.WhenElseClause, body }
     }
 
-    TypeLiteral(typeParameters: Element[], members: Element[]): TypeLiteralElement {
-        return { kind: ElementKind.TypeLiteral, typeParameters, members }
+    TypeLiteral(typeParameters: Element[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
+        return { kind: ElementKind.TypeLiteral, typeParameters, members, constraint }
     }
 
     InvokeMember(typeParameters: Element[], parameters: Element[], result: Optional<Element>): InvokeMemberElement {
         return { kind: ElementKind.InvokeMember, typeParameters, parameters, result}
     }
 
-    ConstraintLiteral(typeParameters: Element[], members: Element[]): TypeLiteralElement {
+    ConstraintLiteral(typeParameters: Element[], members: Element[]): ConstraintLiteralElement {
         return { kind: ElementKind.ConstraintLiteral, typeParameters, members }
     }
 
