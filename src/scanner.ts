@@ -1,3 +1,5 @@
+import { Optional } from "./ast"
+import { FileBuilder } from "./files"
 import { Token, PseudoToken, Literal } from "./tokens"
 
 export class Scanner {
@@ -12,8 +14,9 @@ export class Scanner {
     value: any
     psuedo: PseudoToken = PseudoToken.None
     literal: Literal = Literal.None
+    fileBuilder: Optional<FileBuilder>
 
-    constructor(src: Uint8Array | string) {
+    constructor(src: Uint8Array | string, fileBuilder?: FileBuilder) {
         if (typeof src == "string") {
             const encoder = new TextEncoder()
             this.src = encoder.encode(src)
@@ -26,6 +29,19 @@ export class Scanner {
             this.src.set(text, 0)
             this.src[text.length] = 0
         }
+        this.fileBuilder = fileBuilder
+    }
+
+    startPos(): number {
+        const fb = this.fileBuilder
+        const start = this.start
+        return fb ? fb.pos(start) : start
+    }
+
+    endPos(): number {
+        const fb = this.fileBuilder
+        const end = this.end
+        return fb ? fb.pos(end) : end
     }
 
     clone(): Scanner {
@@ -38,6 +54,7 @@ export class Scanner {
         result.psuedo = this.psuedo
         result.value = this.value
         result.literal = this.literal
+        result.fileBuilder = this.fileBuilder
         return result
     }
 
@@ -73,7 +90,12 @@ export class Scanner {
                     // falls through
                 case Code.linefeed:
                     line++
-                    this.newline = offset - 1
+                    const nl = offset - 1
+                    this.newline = nl
+                    const fb = this.fileBuilder
+                    if (fb) {
+                        fb.addLine(offset)
+                    }
                     continue
 
                 // Symbols
@@ -1268,7 +1290,6 @@ export class Scanner {
 
         this.offset = offset
         this.start = start
-        this.end = offset
         this.line = line
 
         return result
