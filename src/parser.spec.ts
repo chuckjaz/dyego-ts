@@ -3,6 +3,7 @@ import { parse } from "./parser"
 import { Scanner } from "./scanner"
 import { buildVocabulary, Vocabulary, VocabularyScope } from "./vocabulary"
 import { readFileSync } from 'fs'
+import { FileSet } from "./files"
 
 describe("Parser", () => {
     describe("basics", () => {
@@ -135,10 +136,10 @@ describe("Parser", () => {
             v("<| ...nested.empty |>")
         })
         it("can detect a incorrect operator declaration", () => {
-            ve("<| operator `+` |>", "Expected an operator placement (prefix, infix or postfix) on 1")
+            ve("<| operator `+` |>", "test.dg:1:12: Expected an operator placement (prefix, infix or postfix)")
         })
         it("can detect using a symbol instead of an identifier", () => {
-            ve("<| prefix operator + |>", "Expected name or names of the operator on 1")
+            ve("<| prefix operator + |>", "test.dg:1:28: Expected name or names of the operator")
         })
 
         function v(source: string) {
@@ -255,7 +256,7 @@ describe("Parser", () => {
             tr("< let a: Int = 1 >")
         })
         it("can report a type error", () => {
-            tre("+", "Expected a type name on 1")
+            tre("+", "test.dg:1:8: Expected a type name")
         })
 
         function tr(source: string) {
@@ -344,7 +345,7 @@ describe("Parser", () => {
             }
         })
         describe("binary expression", () => {
-            const builder = new ElementBuilder({})
+            const builder = new ElementBuilder()
 
             it("can parse a binary expression", () => {
                 b("a + b")
@@ -443,7 +444,10 @@ describe("Parser", () => {
 
     describe("examples", () => {
         it("can parse the buildins file", () => {
-            f("examples/builtins.dg")
+            const name = "examples/builtins.dg"
+            const elements = f(name)
+            const source = readFileSync(name, 'utf-8')
+            validateElementsPosition(source, 1, 1, source.length + 1, elements)
         })
     })
 
@@ -487,7 +491,9 @@ describe("Parser", () => {
     }
 
     function e(source: string, message: string) {
-        const scanner = new Scanner(source)
+        const fileSet = new FileSet()
+        const fileBuilder = fileSet.buildFile("test.dg", source.length)
+        const scanner = new Scanner(source, fileBuilder)
         let reported = false
         try {
             parse(scanner)
@@ -498,12 +504,15 @@ describe("Parser", () => {
             }
         }
         expect(reported).toBe(true)
+        fileBuilder.build()
     }
 
-    function f(fileName: string) {
+    function f(fileName: string): Element[] {
+        const fileSet = new FileSet()
         const source = readFileSync(fileName)
-        const scanner = new Scanner(source)
-        parse(scanner)
+        const fileBuilder = fileSet.buildFile(fileName, source.length)
+        const scanner = new Scanner(source, fileBuilder)
+        return parse(scanner)
     }
 })
 
@@ -546,3 +555,33 @@ function validateTree(element: Element, expected: Element) {
     }
 }
 
+function validateElementsPosition(source: string, base: number, start: number, end: number, elements: Element[]) {
+    for (let element of elements) {
+        validateElementPosition(source, base, start, end, element)
+    }
+}
+
+function validateElementPosition(source: string, base: number, start: number, end: number, element: Element) {
+    if (element.start < start || element.end > end) {
+        throw Error(`Element ${element.start}-${element.end} is not in range ${start}-${end}`)
+    }
+    if (element.start > element.end) {
+        throw Error(`Element ${element.start} has a negative width`)
+    }
+    if (element.kind == ElementKind.Name) {
+        let startOffset = element.start - base
+        let endOffset = element.end - base
+        if (source[startOffset] == '`') {
+            startOffset++
+            endOffset--
+        }
+        const sourceText = source.substring(startOffset, endOffset)
+        if (element.text != sourceText) {
+            throw Error(`Element at ${element.start} has text of "${element.text}" but source has "${sourceText}"`)
+            source.substring(startOffset, endOffset)
+        }
+    }
+    for (let child of childrenOf(element)) {
+        validateElementPosition(source, base, element.start, element.end, child)
+    }
+}

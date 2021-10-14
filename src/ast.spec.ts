@@ -12,15 +12,14 @@ import { Literal } from "./tokens"
 describe("ast", () => {
     describe("builder", () => {
         it("can create a builder", () => {
-            const context = {}
-            c(new ElementBuilder(context))
+            c(new ElementBuilder())
         })
 
-        const builder = new ElementBuilder({})
+        const builder = new ElementBuilder()
 
         it("can push and pop a context", () => {
-            builder.PushContext()
-            builder.PopContext()
+            builder.pushContext()
+            builder.popContext()
         })
         it("can create a name", () => {
             const n = builder.Name("test")

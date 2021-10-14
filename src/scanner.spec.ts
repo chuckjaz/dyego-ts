@@ -51,7 +51,7 @@ describe("Scanner", () => {
             expect(t).toBe(Token.Identifier)
             expect(scanner.value).toBe("identifier")
             expect(scanner.start).toBe(0)
-            expect(scanner.end).toBe(10)
+            expect(scanner.offset).toBe(10)
         })
         it("can scan multiple identifiers", () => {
             scanSource("ident _ident _ _12", Token.Identifier, Token.Identifier, Token.Identifier, Token.Identifier)

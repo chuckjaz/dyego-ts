@@ -1,3 +1,4 @@
+import { Location } from './files'
 import { Literal } from './tokens'
 
 export const enum ElementKind {
@@ -72,47 +73,47 @@ export type Element =
     TypeConstructorElement |
     VocabularyOperatorDeclarationElement
 
-export interface Name {
+export interface Name extends Location {
     kind: ElementKind.Name
     text: string
 }
 
-export interface NamedElement {
+export interface NamedElement extends Location {
     name: Name
 }
 
-export interface TypedElement {
+export interface TypedElement extends Location {
     type: Element
 }
 
-export interface LiteralElement {
+export interface LiteralElement extends Location {
     kind: ElementKind.Literal
     value: any
     literal: Literal
 }
 
-export interface SelectionElement {
+export interface SelectionElement extends Location {
     kind: ElementKind.Selection
     target: Element
     member: Name
 }
 
-export interface SpreadElement {
+export interface SpreadElement extends Location {
     kind: ElementKind.Spread
     target: Element
 }
 
-export interface BreakElement {
+export interface BreakElement extends Location {
     kind: ElementKind.Break
     label: Optional<Element>
 }
 
-export interface ContinueElement {
+export interface ContinueElement extends Location {
     kind: ElementKind.Continue
     label: Optional<Element>
 }
 
-export interface CallElement {
+export interface CallElement extends Location {
     kind: ElementKind.Call
     target: Element
     arguments: Element[]
@@ -124,17 +125,17 @@ export interface NamedArgumentElement extends NamedElement {
     value: Element
 }
 
-export interface InitalizerElement {
+export interface InitalizerElement extends Location {
     kind: ElementKind.ValueLiteral | ElementKind.EntityLiteral
     members: Element[]
 }
 
-export interface ArrayInitalizerElement {
+export interface ArrayInitalizerElement extends Location {
     kind: ElementKind.ValueArrayLiteral | ElementKind.EntityArrayLiteral
     elements: Element[]
 }
 
-export interface NamedMemberInitializerElement extends NamedElement {
+export interface NamedMemberInitializerElement extends NamedElement{
     kind: ElementKind.NamedMemberInitializer
     value: Element
 }
@@ -151,7 +152,7 @@ export interface ConstraintLetDeclarationElement extends NamedElement {
     initializer: Optional<Element>
 }
 
-export interface LambdaElement {
+export interface LambdaElement extends Location {
     kind: ElementKind.Lambda | ElementKind.IntrinsicLambda
     parameters: Element[]
     typeParameters: Optional<Element[]>
@@ -159,7 +160,7 @@ export interface LambdaElement {
     result: Optional<Element>
 }
 
-export interface LoopElement {
+export interface LoopElement extends Location {
     kind: ElementKind.Loop
     label: Optional<Name>
     body: Element[]
@@ -176,65 +177,65 @@ export interface TypeParameterElement extends NamedElement {
     constraint: Optional<Element>
 }
 
-export interface ReturnElement {
+export interface ReturnElement extends Location {
     kind: ElementKind.Return
     value: Optional<Element>
 }
 
-export interface WhenElement {
+export interface WhenElement extends Location {
     kind: ElementKind.When
     expression: Optional<Element>
     clauses: Element[]
 }
 
-export interface WhenValueClauseElement {
+export interface WhenValueClauseElement extends Location {
     kind: ElementKind.WhenValueClause
     value: Element
     body: Element
 }
 
-export interface WhenElseClauseElement {
+export interface WhenElseClauseElement extends Location {
     kind: ElementKind.WhenElseClause
     body: Element
 }
 
-export interface TypeLiteralElement {
+export interface TypeLiteralElement extends Location {
     kind: ElementKind.TypeLiteral
     typeParameters: Element[]
     members: Element[]
     constraint: Optional<Element>
 }
 
-export interface ConstraintLiteralElement {
+export interface ConstraintLiteralElement extends Location {
     kind: ElementKind.ConstraintLiteral
     typeParameters: Element[]
     members: Element[]
 }
 
-export interface InvokeMemberElement {
+export interface InvokeMemberElement extends Location {
     kind: ElementKind.InvokeMember
     typeParameters: Element[]
     parameters: Element[]
     result: Optional<Element>
 }
 
-export interface VocabularyLiteralElement {
+export interface VocabularyLiteralElement extends Location {
     kind: ElementKind.VocabularyLiteral
     members: Element[]
 }
 
-export interface TypeUnaryExpressionElement {
+export interface TypeUnaryExpressionElement extends Location {
     kind: ElementKind.ArrayType | ElementKind.OptionalType
     operant: Element
 }
 
-export interface TypeBinaryExpressionElement {
+export interface TypeBinaryExpressionElement extends Location {
     kind: ElementKind.OrType | ElementKind.AndType
     left: Element
     right: Element
 }
 
-export interface TypeConstructorElement {
+export interface TypeConstructorElement extends Location {
     kind: ElementKind.TypeConstructor
     target: Element
     arguments: Element[]
@@ -258,7 +259,7 @@ export enum OperatorPrecedenceRelation {
     After,
 }
 
-export interface VocabularyOperatorDeclarationElement {
+export interface VocabularyOperatorDeclarationElement extends Location {
     kind: ElementKind.VocabularyOperatorDeclaration
     names: Name[]
     placement: OperatorPlacement
@@ -316,6 +317,12 @@ export function * childrenOf(element: Element) {
             yield element.name
             if (element.type)
                 yield element.type
+            if (element.initializer)
+                yield element.initializer
+            break
+        case ElementKind.ConstraintLetDeclaration:
+            yield element.name
+            yield element.type
             if (element.initializer)
                 yield element.initializer
             break
@@ -398,160 +405,182 @@ export function * childrenOf(element: Element) {
             yield * element.names
             break
         default:
-            throw Error(`Unknown element kind ${element}`)
+            throw Error(`Unknown element kind ${element.kind}`)
     }
 }
 
-export interface BuilderContext { }
+export interface BuilderContext { 
+    startPos(): number
+    endPos(): number
+}
+
+class EmptyContext {
+    startPos() { return -1 }
+    endPos() { return -1 }
+}
 
 export class ElementBuilder {
     private context: BuilderContext
+    private locations: number[] = []
 
-    constructor(context: BuilderContext) {
+    constructor(context: BuilderContext = new EmptyContext()) {
         this.context = context
     }
 
-    PushContext() {}
-    PopContext() {}
+    pushContext() {
+        this.locations.push(this.context.startPos())
+    }
+
+    popContext() {
+        this.locations.length--
+    }
+
+    private get start(): number {
+        return this.locations[this.locations.length - 1]
+    }
+
+    private get end(): number {
+        return this.context.endPos()
+    }
 
     Name(text: string): Name {
-        return { kind: ElementKind.Name, text }
+        return { kind: ElementKind.Name, start: this.start, end: this.end, text }
     }
 
     Literal(value: any, literal: Literal): LiteralElement {
-        return { kind: ElementKind.Literal, value, literal }
+        return { kind: ElementKind.Literal, start: this.start, end: this.end, value, literal }
     }
 
     Break(label: Optional<Element>): BreakElement {
-        return { kind: ElementKind.Break, label }
+        return { kind: ElementKind.Break, start: this.start, end: this.end, label }
     }
 
     Continue(label: Optional<Element>): ContinueElement {
-        return { kind: ElementKind.Continue, label }
+        return { kind: ElementKind.Continue, start: this.start, end: this.end, label }
     }
 
     Selection(target: Element, member: Name): SelectionElement {
-        return { kind: ElementKind.Selection, target, member }
+        return { kind: ElementKind.Selection, start: this.start, end: this.end, target, member }
     }
 
     Call(target: Element, args: Element[], typeArguments: Optional<Element[]>): CallElement {
-        return { kind: ElementKind.Call, target, arguments: args, typeArguments }
+        return { kind: ElementKind.Call, start: this.start, end: this.end, target, arguments: args, typeArguments }
     }
 
     NamedArgument(name: Name, value: Element): NamedArgumentElement {
-        return { kind: ElementKind.NamedArgument, name, value}
+        return { kind: ElementKind.NamedArgument, start: this.start, end: this.end, name, value}
     }
 
     ValueLiteral(members: Element[]): InitalizerElement {
-        return { kind: ElementKind.ValueLiteral, members }
+        return { kind: ElementKind.ValueLiteral, start: this.start, end: this.end, members }
     }
 
     EntityLiteral(members: Element[]): InitalizerElement {
-        return { kind: ElementKind.EntityLiteral, members }
+        return { kind: ElementKind.EntityLiteral, start: this.start, end: this.end, members }
     }
 
     ValueArrayLiteral(elements: Element[]): ArrayInitalizerElement {
-        return { kind: ElementKind.ValueArrayLiteral, elements }
+        return { kind: ElementKind.ValueArrayLiteral, start: this.start, end: this.end, elements }
     }
 
     EntityArrayLiteral(elements: Element[]): ArrayInitalizerElement {
-        return { kind: ElementKind.EntityArrayLiteral, elements }
+        return { kind: ElementKind.EntityArrayLiteral, start: this.start, end: this.end, elements }
     }
 
     Spread(target: Element): SpreadElement {
-        return { kind: ElementKind.Spread, target }
+        return { kind: ElementKind.Spread, start: this.start, end: this.end, target }
     }
 
     NamedMemberInitializer(name: Name, value: Element): NamedMemberInitializerElement {
-        return { kind: ElementKind.NamedMemberInitializer, name, value }
+        return { kind: ElementKind.NamedMemberInitializer, start: this.start, end: this.end, name, value }
     }
 
     LetDeclaration(name: Name, type: Optional<Element>, initializer: Element): NamedMemberElement {
-        return { kind: ElementKind.LetDeclaration, name, type, initializer }
+        return { kind: ElementKind.LetDeclaration, start: this.start, end: this.end, name, type, initializer }
     }
 
     ConstraintLetDelaration(name: Name, type: Element, initializer: Optional<Element>): ConstraintLetDeclarationElement {
-        return { kind: ElementKind.ConstraintLetDeclaration, name, type, initializer }
+        return { kind: ElementKind.ConstraintLetDeclaration, start: this.start, end: this.end, name, type, initializer }
     }
 
     VarDeclaration(name: Name, type: Optional<Element>, initializer: Optional<Element>): NamedMemberElement {
-        return { kind: ElementKind.VarDeclaration, name, type, initializer }
+        return { kind: ElementKind.VarDeclaration, start: this.start, end: this.end, name, type, initializer }
     }
 
     ValDeclaration(name: Name, type: Optional<Element>, initializer: Optional<Element>): NamedMemberElement {
-        return { kind: ElementKind.ValDeclaration, name, type, initializer}
+        return { kind: ElementKind.ValDeclaration, start: this.start, end: this.end, name, type, initializer}
     }
 
     Lambda(parameters: Element[], typeParameters: Optional<Element[]>, body: Element[], result: Optional<Element>): LambdaElement {
-        return { kind: ElementKind.Lambda, parameters, typeParameters, body, result }
+        return { kind: ElementKind.Lambda, start: this.start, end: this.end, parameters, typeParameters, body, result }
     }
 
     IntrinsicLambda(parameters: Element[], typeParameters: Optional<Element[]>, body: Element[], result: Optional<Element>): LambdaElement {
-        return { kind: ElementKind.IntrinsicLambda, parameters, typeParameters, body, result }
+        return { kind: ElementKind.IntrinsicLambda, start: this.start, end: this.end, parameters, typeParameters, body, result }
     }
 
     Loop(label: Optional<Name>, body: Element[]): LoopElement {
-        return { kind: ElementKind.Loop, label, body }
+        return { kind: ElementKind.Loop, start: this.start, end: this.end, label, body }
     }
 
     Parameter(name: Name, type: Optional<Element>, dflt: Optional<Element>): ParameterElement {
-        return { kind: ElementKind.Parameter, name, type, default: dflt }
+        return { kind: ElementKind.Parameter, start: this.start, end: this.end, name, type, default: dflt }
     }
 
     TypeParameter(name: Name, constraint: Optional<Element>): TypeParameterElement {
-        return { kind: ElementKind.TypeParameter, name, constraint }
+        return { kind: ElementKind.TypeParameter, start: this.start, end: this.end, name, constraint }
     }
 
     Return(value: Optional<Element>): ReturnElement {
-        return { kind: ElementKind.Return, value }
+        return { kind: ElementKind.Return, start: this.start, end: this.end, value }
     }
 
     When(expression: Optional<Element>, clauses: Element[]): WhenElement {
-        return { kind: ElementKind.When, expression, clauses }
+        return { kind: ElementKind.When, start: this.start, end: this.end, expression, clauses }
     }
 
     WhenValueClause(value: Element, body: Element): WhenValueClauseElement {
-        return { kind: ElementKind.WhenValueClause, value, body}
+        return { kind: ElementKind.WhenValueClause, start: this.start, end: this.end, value, body }
     }
 
     WhenElseClause(body: Element): WhenElseClauseElement {
-        return { kind: ElementKind.WhenElseClause, body }
+        return { kind: ElementKind.WhenElseClause, start: this.start, end: this.end, body }
     }
 
     TypeLiteral(typeParameters: Element[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
-        return { kind: ElementKind.TypeLiteral, typeParameters, members, constraint }
+        return { kind: ElementKind.TypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
     }
 
     InvokeMember(typeParameters: Element[], parameters: Element[], result: Optional<Element>): InvokeMemberElement {
-        return { kind: ElementKind.InvokeMember, typeParameters, parameters, result}
+        return { kind: ElementKind.InvokeMember, start: this.start, end: this.end, typeParameters, parameters, result}
     }
 
     ConstraintLiteral(typeParameters: Element[], members: Element[]): ConstraintLiteralElement {
-        return { kind: ElementKind.ConstraintLiteral, typeParameters, members }
+        return { kind: ElementKind.ConstraintLiteral, start: this.start, end: this.end, typeParameters, members }
     }
 
     VocabularyLiteral(members: Element[]): VocabularyLiteralElement {
-        return { kind: ElementKind.VocabularyLiteral, members }
+        return { kind: ElementKind.VocabularyLiteral, start: this.start, end: this.end, members }
     }
 
     ArrayType(operant: Element): TypeUnaryExpressionElement {
-        return { kind: ElementKind.ArrayType, operant }
+        return { kind: ElementKind.ArrayType, start: this.start, end: this.end, operant }
     }
 
     OptionalType(operant: Element): TypeUnaryExpressionElement {
-        return { kind: ElementKind.OptionalType, operant }
+        return { kind: ElementKind.OptionalType, start: this.start, end: this.end, operant }
     }
 
     OrType(left: Element, right: Element): TypeBinaryExpressionElement {
-        return { kind: ElementKind.OrType, left, right }
+        return { kind: ElementKind.OrType, start: this.start, end: this.end, left, right }
     }
 
     AndType(left: Element, right: Element): TypeBinaryExpressionElement {
-        return { kind: ElementKind.AndType, left, right }
+        return { kind: ElementKind.AndType, start: this.start, end: this.end, left, right }
     }
 
     TypeConstructor(target: Element, args: Element[]): TypeConstructorElement {
-        return { kind: ElementKind.TypeConstructor, target, arguments: args}
+        return { kind: ElementKind.TypeConstructor, start: this.start, end: this.end, target, arguments: args}
     }
 
     VocabularyOperatorDeclaration(
@@ -562,6 +591,8 @@ export class ElementBuilder {
     ): VocabularyOperatorDeclarationElement {
         return {
             kind: ElementKind.VocabularyOperatorDeclaration,
+            start: this.start,
+            end: this.end,
             names,
             placement,
             precedence,
