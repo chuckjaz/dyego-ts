@@ -74,171 +74,171 @@ export type Element =
     VocabularyOperatorDeclarationElement
 
 export interface Name extends Location {
-    kind: ElementKind.Name
-    text: string
+    readonly kind: ElementKind.Name
+    readonly text: string
 }
 
 export interface NamedElement extends Location {
-    name: Name
+    readonly name: Name
 }
 
 export interface TypedElement extends Location {
-    type: Element
+    readonly type: Element
 }
 
 export interface LiteralElement extends Location {
-    kind: ElementKind.Literal
-    value: any
-    literal: Literal
+    readonly kind: ElementKind.Literal
+    readonly value: any
+    readonly literal: Literal
 }
 
 export interface SelectionElement extends Location {
-    kind: ElementKind.Selection
-    target: Element
-    member: Name
+    readonly kind: ElementKind.Selection
+    readonly target: Element
+    readonly member: Name
 }
 
 export interface SpreadElement extends Location {
-    kind: ElementKind.Spread
-    target: Element
+    readonly kind: ElementKind.Spread
+    readonly target: Element
 }
 
 export interface BreakElement extends Location {
-    kind: ElementKind.Break
-    label: Optional<Element>
+    readonly kind: ElementKind.Break
+    readonly label: Optional<Element>
 }
 
 export interface ContinueElement extends Location {
-    kind: ElementKind.Continue
-    label: Optional<Element>
+    readonly kind: ElementKind.Continue
+    readonly label: Optional<Element>
 }
 
 export interface CallElement extends Location {
-    kind: ElementKind.Call
-    target: Element
-    arguments: Element[]
-    typeArguments: Optional<Element[]>
+    readonly kind: ElementKind.Call
+    readonly target: Element
+    readonly arguments: Element[]
+    readonly typeArguments: Optional<Element[]>
 }
 
 export interface NamedArgumentElement extends NamedElement {
-    kind: ElementKind.NamedArgument
-    value: Element
+    readonly kind: ElementKind.NamedArgument
+    readonly value: Element
 }
 
 export interface InitalizerElement extends Location {
-    kind: ElementKind.ValueLiteral | ElementKind.EntityLiteral
-    members: Element[]
+    readonly kind: ElementKind.ValueLiteral | ElementKind.EntityLiteral
+    readonly members: Element[]
 }
 
 export interface ArrayInitalizerElement extends Location {
-    kind: ElementKind.ValueArrayLiteral | ElementKind.EntityArrayLiteral
-    elements: Element[]
+    readonly kind: ElementKind.ValueArrayLiteral | ElementKind.EntityArrayLiteral
+    readonly elements: Element[]
 }
 
 export interface NamedMemberInitializerElement extends NamedElement{
-    kind: ElementKind.NamedMemberInitializer
-    value: Element
+    readonly kind: ElementKind.NamedMemberInitializer
+    readonly value: Element
 }
 
 export interface NamedMemberElement extends NamedElement {
-    kind: ElementKind.LetDeclaration | ElementKind.VarDeclaration | ElementKind.ValDeclaration
-    type: Optional<Element>
-    initializer: Optional<Element>
+    readonly kind: ElementKind.LetDeclaration | ElementKind.VarDeclaration | ElementKind.ValDeclaration
+    readonly type: Optional<Element>
+    readonly initializer: Optional<Element>
 }
 
 export interface ConstraintLetDeclarationElement extends NamedElement {
-    kind: ElementKind.ConstraintLetDeclaration
-    type: Element
-    initializer: Optional<Element>
+    readonly kind: ElementKind.ConstraintLetDeclaration
+    readonly type: Element
+    readonly initializer: Optional<Element>
 }
 
 export interface LambdaElement extends Location {
-    kind: ElementKind.Lambda | ElementKind.IntrinsicLambda
-    parameters: Element[]
-    typeParameters: Optional<Element[]>
-    body: Element[]
-    result: Optional<Element>
+    readonly kind: ElementKind.Lambda | ElementKind.IntrinsicLambda
+    readonly parameters: Element[]
+    readonly typeParameters: Optional<Element[]>
+    readonly body: Element[]
+    readonly result: Optional<Element>
 }
 
 export interface LoopElement extends Location {
-    kind: ElementKind.Loop
-    label: Optional<Name>
-    body: Element[]
+    readonly kind: ElementKind.Loop
+    readonly label: Optional<Name>
+    readonly body: Element[]
 }
 
 export interface ParameterElement extends NamedElement {
-    kind: ElementKind.Parameter
-    type: Optional<Element>
-    default: Optional<Element>
+    readonly kind: ElementKind.Parameter
+    readonly type: Optional<Element>
+    readonly default: Optional<Element>
 }
 
 export interface TypeParameterElement extends NamedElement {
-    kind: ElementKind.TypeParameter
-    constraint: Optional<Element>
+    readonly kind: ElementKind.TypeParameter
+    readonly constraint: Optional<Element>
 }
 
 export interface ReturnElement extends Location {
-    kind: ElementKind.Return
-    value: Optional<Element>
+    readonly kind: ElementKind.Return
+    readonly value: Optional<Element>
 }
 
 export interface WhenElement extends Location {
-    kind: ElementKind.When
-    expression: Optional<Element>
-    clauses: Element[]
+    readonly kind: ElementKind.When
+    readonly expression: Optional<Element>
+    readonly clauses: Element[]
 }
 
 export interface WhenValueClauseElement extends Location {
-    kind: ElementKind.WhenValueClause
-    value: Element
-    body: Element
+    readonly kind: ElementKind.WhenValueClause
+    readonly value: Element
+    readonly body: Element
 }
 
 export interface WhenElseClauseElement extends Location {
-    kind: ElementKind.WhenElseClause
-    body: Element
+    readonly kind: ElementKind.WhenElseClause
+    readonly body: Element
 }
 
 export interface TypeLiteralElement extends Location {
-    kind: ElementKind.TypeLiteral
-    typeParameters: Element[]
-    members: Element[]
-    constraint: Optional<Element>
+    readonly kind: ElementKind.TypeLiteral
+    readonly typeParameters: Element[]
+    readonly members: Element[]
+    readonly constraint: Optional<Element>
 }
 
 export interface ConstraintLiteralElement extends Location {
-    kind: ElementKind.ConstraintLiteral
-    typeParameters: Element[]
-    members: Element[]
+    readonly kind: ElementKind.ConstraintLiteral
+    readonly typeParameters: Element[]
+    readonly members: Element[]
 }
 
 export interface InvokeMemberElement extends Location {
-    kind: ElementKind.InvokeMember
-    typeParameters: Element[]
-    parameters: Element[]
-    result: Optional<Element>
+    readonly kind: ElementKind.InvokeMember
+    readonly typeParameters: Element[]
+    readonly parameters: Element[]
+    readonly result: Optional<Element>
 }
 
 export interface VocabularyLiteralElement extends Location {
-    kind: ElementKind.VocabularyLiteral
-    members: Element[]
+    readonly kind: ElementKind.VocabularyLiteral
+    readonly members: Element[]
 }
 
 export interface TypeUnaryExpressionElement extends Location {
-    kind: ElementKind.ArrayType | ElementKind.OptionalType
-    operant: Element
+    readonly kind: ElementKind.ArrayType | ElementKind.OptionalType
+    readonly operant: Element
 }
 
 export interface TypeBinaryExpressionElement extends Location {
-    kind: ElementKind.OrType | ElementKind.AndType
-    left: Element
-    right: Element
+    readonly kind: ElementKind.OrType | ElementKind.AndType
+    readonly left: Element
+    readonly right: Element
 }
 
 export interface TypeConstructorElement extends Location {
-    kind: ElementKind.TypeConstructor
-    target: Element
-    arguments: Element[]
+    readonly kind: ElementKind.TypeConstructor
+    readonly target: Element
+    readonly arguments: Element[]
 }
 
 export enum OperatorPlacement {
@@ -260,10 +260,10 @@ export enum OperatorPrecedenceRelation {
 }
 
 export interface VocabularyOperatorDeclarationElement extends Location {
-    kind: ElementKind.VocabularyOperatorDeclaration
-    names: Name[]
-    placement: OperatorPlacement
-    precedence: Optional<VocabularyOperatorPrecedence>
+    readonly kind: ElementKind.VocabularyOperatorDeclaration
+    readonly names: Name[]
+    readonly placement: OperatorPlacement
+    readonly precedence: Optional<VocabularyOperatorPrecedence>
     associativity: OperatorAssociativity
 }
 
@@ -405,7 +405,7 @@ export function * childrenOf(element: Element) {
             yield * element.names
             break
         default:
-            throw Error(`Unknown element kind ${element.kind}`)
+            throw Error(`Unknown element kind ${(element as any).kind}`)
     }
 }
 
