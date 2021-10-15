@@ -1288,7 +1288,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
 }
 
 class SelectedOperator {
-    name: string,
+    name: string
     level: PrecedenceLevel
     associativity: OperatorAssociativity
     placement: OperatorPlacement
