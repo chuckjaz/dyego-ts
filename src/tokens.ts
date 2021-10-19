@@ -1,7 +1,7 @@
 export const enum Token {
     Invalid,
     EOF,
-    Identifier, 
+    Identifier,
     Symbol,
     Literal,
     LParen,
@@ -30,45 +30,45 @@ export const enum Token {
     True,
     Return,
     Val,
-    Var,    
+    Var,
 }
 
 export function nameOfToken(token: Token): string {
     switch (token) {
-        case Token.Invalid: return "Invalid"
-        case Token.EOF: return "EOF"
-        case Token.Identifier: return "Identifier" 
-        case Token.Symbol: return "Symbol"
-        case Token.Literal: return "Literal"
-        case Token.LParen: return "LParen"
-        case Token.RParen: return "RParen"
-        case Token.LBrack: return "LBrack"
-        case Token.RBrack: return "RBrack"
-        case Token.LBrace: return "LBrace"
-        case Token.RBrace: return "RBrace"
-        case Token.Semi: return "Semi"
-        case Token.Colon: return "Colon"
-        case Token.Comma: return "Comma"
-        case Token.Dot: return "Dot"
-        case Token.Scope: return "Scope" 
-        case Token.VocabStart: return "VocabStart"
-        case Token.VocabEnd: return "VocabEnd"
-        case Token.BangRBrack: return "BangRBrack"
-        case Token.LBrackBang: return "LBrackBang"
-        case Token.BangRBrace: return "BangRBrace"
-        case Token.LBraceBang: return "LBraceBang"
+        case Token.Invalid: return "<Invalid>"
+        case Token.EOF: return "<EOF>"
+        case Token.Identifier: return "<Identifier>"
+        case Token.Symbol: return "<Symbol>"
+        case Token.Literal: return "<Literal>"
+        case Token.LParen: return "("
+        case Token.RParen: return ")"
+        case Token.LBrack: return "["
+        case Token.RBrack: return "]"
+        case Token.LBrace: return "{"
+        case Token.RBrace: return "}"
+        case Token.Semi: return ";"
+        case Token.Colon: return ":"
+        case Token.Comma: return ","
+        case Token.Dot: return "."
+        case Token.Scope: return "::"
+        case Token.VocabStart: return "<|"
+        case Token.VocabEnd: return "|>"
+        case Token.BangRBrack: return "!]"
+        case Token.LBrackBang: return "[!"
+        case Token.BangRBrace: return "!}"
+        case Token.LBraceBang: return "{!"
         case Token.False: return "false"
         case Token.Let: return "let"
         case Token.True: return "true"
         case Token.Return: return "return"
         case Token.Val: return "val"
-        case Token.Var: return "var"    
+        case Token.Var: return "var"
     }
     return "<Unknown>"
 }
 
 export const enum PseudoToken {
-    None, 
+    None,
 
     // Identifiers
     After,
@@ -109,6 +109,8 @@ export const enum PseudoToken {
     NotEqual, // !=
     LessThan, // <
     LessThanEqual, // <=
+    LessThanBang, // <!
+    BangGreaterThan, // !>
     Question, // ?
     Arrow, // ->
     Range, // ..
@@ -118,53 +120,55 @@ export const enum PseudoToken {
 
 export function nameOfPseudoToken(pseudo: PseudoToken): string {
     switch (pseudo) {
-        case PseudoToken.None: return "None"  
-        case PseudoToken.After: return "after" 
-        case PseudoToken.Before: return "before" 
-        case PseudoToken.Break: return "break" 
-        case PseudoToken.Continue: return "continue" 
-        case PseudoToken.Else: return "else" 
-        case PseudoToken.Identifiers: return "identifiers" 
-        case PseudoToken.If: return "if" 
-        case PseudoToken.Infix: return "infix" 
-        case PseudoToken.Left: return "left" 
-        case PseudoToken.Loop: return "loop" 
-        case PseudoToken.Operator: return "operator" 
-        case PseudoToken.Postfix: return "postfix" 
-        case PseudoToken.Prefix: return "prefix" 
+        case PseudoToken.None: return "<None>"
+        case PseudoToken.After: return "after"
+        case PseudoToken.Before: return "before"
+        case PseudoToken.Break: return "break"
+        case PseudoToken.Continue: return "continue"
+        case PseudoToken.Else: return "else"
+        case PseudoToken.Identifiers: return "identifiers"
+        case PseudoToken.If: return "if"
+        case PseudoToken.Infix: return "infix"
+        case PseudoToken.Left: return "left"
+        case PseudoToken.Loop: return "loop"
+        case PseudoToken.Operator: return "operator"
+        case PseudoToken.Postfix: return "postfix"
+        case PseudoToken.Prefix: return "prefix"
         case PseudoToken.Right: return "right"
         case PseudoToken.This: return "this"
         case PseudoToken.ThisType: return "This"
-        case PseudoToken.When: return "when" 
-        case PseudoToken.Where: return "where" 
-        case PseudoToken.While: return "while" 
-        case PseudoToken.Add: return "Add"  
-        case PseudoToken.And: return "And"  
-        case PseudoToken.Bar: return "Bar"  
-        case PseudoToken.Sub: return "Sub"  
-        case PseudoToken.Mult: return "Mult"  
-        case PseudoToken.Div: return "Div"  
-        case PseudoToken.Rem: return "Rem"  
-        case PseudoToken.Not: return "Not"  
-        case PseudoToken.LogicalAnd: return "LogicalAnd"  
-        case PseudoToken.LogicalOr: return "LogicalOr"  
-        case PseudoToken.GreaterThan: return "GreaterThan"  
-        case PseudoToken.GreaterThanEqual: return "GreaterThanEqual"  
-        case PseudoToken.Equal: return "Equal"  
-        case PseudoToken.DoubleEqual: return "DoubleEqual"  
-        case PseudoToken.NotEqual: return "NotEqual"  
-        case PseudoToken.LessThan: return "LessThan"  
-        case PseudoToken.LessThanEqual: return "LessThanEqual"  
-        case PseudoToken.Question: return "Question"  
-        case PseudoToken.Arrow: return "Arrow"  
-        case PseudoToken.Range: return "Range"  
-        case PseudoToken.Spread: return "Spread"  
-        case PseudoToken.Escaped: return "Escaped" 
+        case PseudoToken.When: return "when"
+        case PseudoToken.Where: return "where"
+        case PseudoToken.While: return "while"
+        case PseudoToken.Add: return "+"
+        case PseudoToken.And: return "&"
+        case PseudoToken.Bar: return "|"
+        case PseudoToken.Sub: return "-"
+        case PseudoToken.Mult: return "*"
+        case PseudoToken.Div: return "/"
+        case PseudoToken.Rem: return "%"
+        case PseudoToken.Not: return "!"
+        case PseudoToken.LogicalAnd: return "&&"
+        case PseudoToken.LogicalOr: return "||"
+        case PseudoToken.GreaterThan: return ">"
+        case PseudoToken.GreaterThanEqual: return ">="
+        case PseudoToken.Equal: return "="
+        case PseudoToken.DoubleEqual: return "=="
+        case PseudoToken.NotEqual: return "!="
+        case PseudoToken.LessThan: return "<"
+        case PseudoToken.LessThanEqual: return "<="
+        case PseudoToken.LessThanBang: return "<!"
+        case PseudoToken.BangGreaterThan: return "!>"
+        case PseudoToken.Question: return "?"
+        case PseudoToken.Arrow: return "->"
+        case PseudoToken.Range: return ".."
+        case PseudoToken.Spread: return "..."
+        case PseudoToken.Escaped: return "<Escaped>"
     }
     return "<Unknown>"
 }
-    
- 
+
+
 export const enum Literal {
     None,
     Boolean,

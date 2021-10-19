@@ -118,7 +118,9 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     case PseudoToken.Spread:
                         return sequenceSpread()
                     case PseudoToken.LessThan:
-                        return typeLiteral()
+                        return valueTypeLiteral()
+                    case PseudoToken.LessThanBang:
+                        return mutableTypeLiteral()
                 }
                 return expression()
             case Token.Literal:
@@ -345,7 +347,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         })
     }
 
-    function typeLiteral(): Element {
+    function valueTypeLiteral(): Element {
         return exclude(PseudoToken.GreaterThan, () => {
             return ctx(() => {
                 expectPseudo(PseudoToken.LessThan)
@@ -361,7 +363,28 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     next()
                     constraint = typeReference()
                 }
-                return builder.TypeLiteral(typeParameters, members, constraint)
+                return builder.ValueTypeLiteral(typeParameters, members, constraint)
+            })
+        })
+    }
+
+    function mutableTypeLiteral(): Element {
+        return exclude(PseudoToken.BangGreaterThan, () => {
+            return ctx(() => {
+                expectPseudo(PseudoToken.LessThanBang)
+                const typeParameters = optional(() => {
+                    const result = list(formalTypeParameter)
+                    expectPseudo(PseudoToken.Arrow)
+                    return result
+                }) || []
+                const members = list(typeLiteralMember)
+                expectPseudo(PseudoToken.BangGreaterThan)
+                let constraint: Optional<Element> = undefined
+                if (current == Token.Colon) {
+                    next()
+                    constraint = typeReference()
+                }
+                return builder.MutableTypeLiteral(typeParameters, members, constraint)
             })
         })
     }
@@ -438,8 +461,11 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     }
                     return result
                 case Token.Symbol:
-                    if (pseudo == PseudoToken.LessThan) {
-                        return typeLiteral()
+                    switch (pseudo) {
+                        case PseudoToken.LessThan:
+                            return valueTypeLiteral()
+                        case PseudoToken.LessThanBang:
+                            return mutableTypeLiteral()
                     }
                     break
                 case Token.LParen:
@@ -1072,9 +1098,15 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     return builder.LetDeclaration(nm, undefined, initializer)
                 }
                 case Token.Symbol:
-                    if (pseudo == PseudoToken.LessThan) {
-                        const initializer = typeLiteral()
-                        return builder.LetDeclaration(nm, ty, initializer)
+                    switch (pseudo) {
+                        case PseudoToken.LessThan: {
+                            const initializer = valueTypeLiteral()
+                            return builder.LetDeclaration(nm, ty, initializer)
+                        }
+                        case PseudoToken.LessThanBang: {
+                            const initializer = mutableTypeLiteral()
+                            return builder.LetDeclaration(nm, ty, initializer)
+                        }
                     }
                     break
             }

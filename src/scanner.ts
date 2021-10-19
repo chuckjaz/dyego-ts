@@ -218,6 +218,14 @@ export class Scanner {
                                     result = Token.BangRBrace
                                     this.value = "!}"
                                     break loop
+                                case Code.gt:
+                                    if (!symbolExtender(src[offset + 1])) {
+                                        offset++
+                                        this.psuedo = PseudoToken.BangGreaterThan
+                                        this.value = "!>"
+                                        break loop
+                                    }
+                                    break
                             }
                             if (!symbolExtender(src[offset])) {
                                 this.psuedo = PseudoToken.Not
@@ -248,6 +256,13 @@ export class Scanner {
                                         break loop
                                     }
                                     break
+                                case Code.bang:
+                                    if (!symbolExtender(src[offset + 1])) {
+                                        offset++
+                                        this.psuedo = PseudoToken.LessThanBang
+                                        this.value = "<!"
+                                        break loop
+                                    }
                                 case Code.bar:
                                     offset++
                                     result = Token.VocabStart

@@ -28,7 +28,8 @@ export const enum ElementKind {
     When,
     WhenValueClause,
     WhenElseClause,
-    TypeLiteral,
+    ValueTypeLiteral,
+    MutableTypeLiteral,
     InvokeMember,
     ConstraintLiteral,
     VocabularyLiteral,
@@ -200,7 +201,7 @@ export interface WhenElseClauseElement extends Location {
 }
 
 export interface TypeLiteralElement extends Location {
-    readonly kind: ElementKind.TypeLiteral
+    readonly kind: ElementKind.ValueTypeLiteral | ElementKind.MutableTypeLiteral
     readonly typeParameters: Element[]
     readonly members: Element[]
     readonly constraint: Optional<Element>
@@ -369,7 +370,8 @@ export function * childrenOf(element: Element) {
         case ElementKind.WhenElseClause:
             yield element.body
             break
-        case ElementKind.TypeLiteral:
+        case ElementKind.ValueTypeLiteral:
+        case ElementKind.MutableTypeLiteral:
             yield * element.typeParameters
             yield * element.members
             if (element.constraint)
@@ -547,8 +549,12 @@ export class ElementBuilder {
         return { kind: ElementKind.WhenElseClause, start: this.start, end: this.end, body }
     }
 
-    TypeLiteral(typeParameters: Element[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
-        return { kind: ElementKind.TypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
+    ValueTypeLiteral(typeParameters: Element[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
+        return { kind: ElementKind.ValueTypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
+    }
+
+    MutableTypeLiteral(typeParameters: Element[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
+        return { kind: ElementKind.MutableTypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
     }
 
     InvokeMember(typeParameters: Element[], parameters: Element[], result: Optional<Element>): InvokeMemberElement {
