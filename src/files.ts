@@ -18,6 +18,7 @@ export interface Position {
 export interface File {
     fileName: string
     size: number
+    location(start: number, end?: number): Location
     position(loc: Location): Position
 }
 
@@ -45,7 +46,7 @@ export class FileSet {
 
     file(loc: Location): File {
         const index = find(this.bases, loc.start)
-        return this.files[index] 
+        return this.files[index]
     }
 
     position(loc: Location): Position {
@@ -133,10 +134,10 @@ class PositionImpl implements Position {
     isValid: boolean
 
     constructor (
-        fileName: string, 
-        line: number, 
+        fileName: string,
+        line: number,
         lineStart: number,
-        column: number, 
+        column: number,
         length: number
     ) {
         this.fileName = fileName
@@ -155,7 +156,7 @@ class PositionImpl implements Position {
 }
 
 class FileImpl implements File {
-    fileName: string 
+    fileName: string
     size: number
     private base: number
     private lines: number[]
@@ -165,6 +166,13 @@ class FileImpl implements File {
         this.size = size
         this.base = base
         this.lines = lines
+    }
+
+    location(start: number, end?: number): Location {
+        const base = this.base
+        const startLocation = start + base
+        const endLocation = end ? end + base : startLocation
+        return { start: startLocation, end: endLocation }
     }
 
     position(loc: Location): Position {
@@ -177,7 +185,7 @@ class FileImpl implements File {
 
     private positionOf(start: number, end: number): Position {
         const line = this.lineOf(start)
-        if (line < 0) 
+        if (line < 0)
             return new PositionImpl(this.fileName, line, 0, 0, -1)
         const lineStart = this.lines[line]
         const column = (start - this.base) - lineStart + 1

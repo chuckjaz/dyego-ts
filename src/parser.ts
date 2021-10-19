@@ -1,7 +1,7 @@
 import {
     Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement,
     OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, SpreadElement,
-    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, SelectionElement, InvokeMemberElement
+    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, SelectionElement, InvokeMemberElement, TypeParameterElement
 } from './ast'
 import {
     Scanner
@@ -389,7 +389,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         })
     }
 
-    function formalTypeParameter(): Element | null {
+    function formalTypeParameter(): TypeParameterElement | null {
         return ctx(() => {
             if (current != Token.Identifier) return null
             const nm = name()

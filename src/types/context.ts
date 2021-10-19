@@ -1,24 +1,43 @@
+import { typeBuilder, TypeBuilder, TypeKind, TypeSymbol } from ".";
 import { Element } from "../ast";
-import { File, FileSet } from "../files";
+import { File, FileSet, Location } from "../files";
 
-class Module {
+export interface Module {
     qualifiedName: string
     file: File
     elements: Element[]
-
-    constructor(qualifiedName: string, file: File, elements: Element[]) {
-        this.qualifiedName = qualifiedName
-        this.file = file
-        this.elements = elements
-    }
 }
 
-class TypeContext {
+export const enum DiagnosticKind {
+    Error,
+    Warning,
+}
+
+export interface Diagnostic {
+    kind: DiagnosticKind
+    location: Location
+    message: string
+    additional: Location[]
+}
+
+export class TypeContext {
     fileSet: FileSet
     modules: Module[]
-
+    globalSymbol: TypeSymbol = { name: "global", location: { start: -1, end: -1 } }
+    global = typeBuilder(this, TypeKind.Module, this.globalSymbol)
+    builders = new Map<TypeSymbol, TypeBuilder>()
+    diagnostics: Diagnostic[] = []
+ 
     constructor(fileSet: FileSet, modules: Module[]) {
         this.fileSet = fileSet
         this.modules = modules
+    }
+
+    report(kind: DiagnosticKind, location: Location, message: string, ...additional: Location[]) {
+        this.diagnostics.push({ kind, message, location, additional })
+    }
+
+    reportError(location: Location, message: string, ...additional: Location[]) {
+        this.diagnostics.push({ kind: DiagnosticKind.Error, message, location, additional })
     }
 }
