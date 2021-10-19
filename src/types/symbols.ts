@@ -1,5 +1,8 @@
+import { Location } from "../files"
+
 export interface Symbol {
     readonly name: string
+    readonly location: Location
 }
 
 export interface Scope<S extends Symbol> {
@@ -28,8 +31,16 @@ export function mergeScopes<S extends Symbol>(...scopes: Scope<S>[]): Scope<S> {
     switch (nonEmpty.length) {
         case 0: return emptyScope()
         case 1: return nonEmpty[0]
-        default: return new MergedScope(nonEmpty)
     }
+    const efffectiveScopes: Scope<S>[] = []
+    for (let scope of nonEmpty) {
+        if (scope instanceof MergedScope) {
+            efffectiveScopes.push(...scope.scopes)
+        } else {
+            efffectiveScopes.push(scope)
+        }
+    }
+    return new MergedScope(efffectiveScopes)
 }
 
 class EmptyScope implements Scope<any> {
@@ -108,7 +119,7 @@ class ScopeBuidlerImpl<S extends Symbol> extends ScopeImpl<S> implements ScopeBu
 }
 
 class MergedScope<S extends Symbol> implements Scope<S> {
-    private scopes: Scope<S>[]
+    scopes: Scope<S>[]
 
     constructor(scopes: Scope<S>[]) {
         this.scopes = scopes.reverse()

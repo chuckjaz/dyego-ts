@@ -121,5 +121,5 @@ function s(...symbols: Symbol[]): Scope<Symbol> {
 }
 
 function sym(name: string): Symbol {
-    return { name }
+    return { name, location: { start: -1, end: -1 } }
 }

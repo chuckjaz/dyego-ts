@@ -55,7 +55,9 @@ export type Element =
     InitalizerElement |
     ArrayInitalizerElement |
     NamedMemberInitializerElement |
-    NamedMemberElement |
+    LetDeclarationElement |
+    VarDeclarationElement |
+    ValDeclarationElement |
     ConstraintLetDeclarationElement |
     LambdaElement |
     LoopElement |
@@ -147,6 +149,18 @@ export interface NamedMemberElement extends NamedElement {
     readonly initializer: Optional<Element>
 }
 
+export interface LetDeclarationElement extends NamedMemberElement {
+    readonly kind: ElementKind.LetDeclaration
+}
+
+export interface VarDeclarationElement extends NamedMemberElement {
+    readonly kind: ElementKind.VarDeclaration
+}
+
+export interface ValDeclarationElement extends NamedMemberElement {
+    readonly kind: ElementKind.ValDeclaration
+}
+
 export interface ConstraintLetDeclarationElement extends NamedElement {
     readonly kind: ElementKind.ConstraintLetDeclaration
     readonly type: Element
@@ -202,7 +216,7 @@ export interface WhenElseClauseElement extends Location {
 
 export interface TypeLiteralElement extends Location {
     readonly kind: ElementKind.ValueTypeLiteral | ElementKind.MutableTypeLiteral
-    readonly typeParameters: Element[]
+    readonly typeParameters: TypeParameterElement[]
     readonly members: Element[]
     readonly constraint: Optional<Element>
 }
@@ -497,7 +511,7 @@ export class ElementBuilder {
         return { kind: ElementKind.NamedMemberInitializer, start: this.start, end: this.end, name, value }
     }
 
-    LetDeclaration(name: Name, type: Optional<Element>, initializer: Element): NamedMemberElement {
+    LetDeclaration(name: Name, type: Optional<Element>, initializer: Element): LetDeclarationElement {
         return { kind: ElementKind.LetDeclaration, start: this.start, end: this.end, name, type, initializer }
     }
 
@@ -505,11 +519,11 @@ export class ElementBuilder {
         return { kind: ElementKind.ConstraintLetDeclaration, start: this.start, end: this.end, name, type, initializer }
     }
 
-    VarDeclaration(name: Name, type: Optional<Element>, initializer: Optional<Element>): NamedMemberElement {
+    VarDeclaration(name: Name, type: Optional<Element>, initializer: Optional<Element>): VarDeclarationElement {
         return { kind: ElementKind.VarDeclaration, start: this.start, end: this.end, name, type, initializer }
     }
 
-    ValDeclaration(name: Name, type: Optional<Element>, initializer: Optional<Element>): NamedMemberElement {
+    ValDeclaration(name: Name, type: Optional<Element>, initializer: Optional<Element>): ValDeclarationElement {
         return { kind: ElementKind.ValDeclaration, start: this.start, end: this.end, name, type, initializer}
     }
 
@@ -549,11 +563,11 @@ export class ElementBuilder {
         return { kind: ElementKind.WhenElseClause, start: this.start, end: this.end, body }
     }
 
-    ValueTypeLiteral(typeParameters: Element[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
+    ValueTypeLiteral(typeParameters: TypeParameterElement[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
         return { kind: ElementKind.ValueTypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
     }
 
-    MutableTypeLiteral(typeParameters: Element[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
+    MutableTypeLiteral(typeParameters: TypeParameterElement[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
         return { kind: ElementKind.MutableTypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
     }
 
