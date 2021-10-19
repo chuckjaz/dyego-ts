@@ -185,9 +185,17 @@ describe("ast", () => {
             expect(n.body).toBe(t)
             ch(n).toEqual([t])
         })
-        it("can create a type literal", () => {
-            const n = builder.TypeLiteral([], [], v)
-            expect(n.kind).toBe(ElementKind.TypeLiteral)
+        it("can create a value type literal", () => {
+            const n = builder.ValueTypeLiteral([], [], v)
+            expect(n.kind).toBe(ElementKind.ValueTypeLiteral)
+            expect(n.members).toEqual([])
+            expect(n.typeParameters).toEqual([])
+            expect(n.constraint).toBe(v)
+            ch(n).toEqual([v])
+        })
+        it("can create a mutable type literal", () => {
+            const n = builder.MutableTypeLiteral([], [], v)
+            expect(n.kind).toBe(ElementKind.MutableTypeLiteral)
             expect(n.members).toEqual([])
             expect(n.typeParameters).toEqual([])
             expect(n.constraint).toBe(v)

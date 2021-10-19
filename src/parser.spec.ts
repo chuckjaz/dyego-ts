@@ -149,7 +149,7 @@ describe("Parser", () => {
             e(`let a = ${source}`, message)
         }
     })
-    describe("type literal", () => {
+    describe("value type literal", () => {
         it("can parse an empty type literal", () => {
             t("< >")
         })
@@ -184,6 +184,35 @@ describe("Parser", () => {
         })
         it("can validate a type literal with a constraint", () => {
             t("< let a: Int = 1 > : Constraint")
+        })
+        function t(source: string) {
+            return p(`let a = ${source}`)
+        }
+    })
+    describe("mutable value type literal", () => {
+        it("can parse an empty type literal", () => {
+            t("<! !>")
+        })
+        it("can parse a val member", () => {
+            t("<! val a: Int = 1, !>")
+        })
+        it("can parse a var member", () => {
+            t("<! var a: Int = 1, !>")
+        })
+        it("can parse a let member", () => {
+            t("<! let a: Int = 1, !>")
+        })
+        it("can parse a spread a type", () => {
+            t("<! ...a !>")
+        })
+        it("can use a type literal to export", () => {
+            p("<! let a = a, let b = b, !>")
+        })
+        it("can have a simple invoke member", () => {
+            t("<! { } !>")
+        })
+        it("can validate a type literal with a constraint", () => {
+            t("<! let a: Int = 1 !> : Constraint")
         })
         function t(source: string) {
             return p(`let a = ${source}`)
