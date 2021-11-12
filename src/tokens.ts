@@ -111,6 +111,8 @@ export const enum PseudoToken {
     LessThanEqual, // <=
     LessThanBang, // <!
     BangGreaterThan, // !>
+    LessThanDollar, // <$
+    DollarGreaterThan, // $>
     Question, // ?
     Arrow, // ->
     Range, // ..
@@ -159,6 +161,8 @@ export function nameOfPseudoToken(pseudo: PseudoToken): string {
         case PseudoToken.LessThanEqual: return "<="
         case PseudoToken.LessThanBang: return "<!"
         case PseudoToken.BangGreaterThan: return "!>"
+        case PseudoToken.LessThanDollar: return "<$"
+        case PseudoToken.DollarGreaterThan: return "$>"
         case PseudoToken.Question: return "?"
         case PseudoToken.Arrow: return "->"
         case PseudoToken.Range: return ".."

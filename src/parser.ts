@@ -1,7 +1,7 @@
 import {
     Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement,
     OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, SpreadElement,
-    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, SelectionElement, InvokeMemberElement, TypeParameterElement
+    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, TypeParameterElement, CallSignatureElement
 } from './ast'
 import {
     Scanner
@@ -398,7 +398,15 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                 next()
                 ty = typeReference()
             }
-            return builder.TypeParameter(nm, ty)
+            let dflt: Optional<Element>
+            if (pseudo == PseudoToken.Equal) {
+                next()
+                dflt = longest(typeReference, expression) ?? undefined
+                if (!dflt) {
+                    report("Expected a type refernece")
+                }
+            }
+            return builder.TypeParameter(nm, ty, dflt)
         })
     }
 
@@ -466,8 +474,14 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                             return valueTypeLiteral()
                         case PseudoToken.LessThanBang:
                             return mutableTypeLiteral()
+                        case PseudoToken.LessThanDollar:
+                            return symbolLiteral()
                     }
                     break
+                case Token.LBrace:
+                    return callSignature()
+                case Token.LBraceBang:
+                    return intrinsicCallSignature()
                 case Token.LParen:
                     return parenDelimited(typeReference)
             }
@@ -485,13 +499,13 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                 case Token.Identifier: {
                     const nm = name()
                     expect(Token.Colon)
-                    const value = first(() => typeReference(), () => expression())
+                    const value = longest(typeReference, expression)
                     if (!value) return value
                     return builder.NamedArgument(nm, value)
                 }
                 case Token.Colon: {
                     next()
-                    const value = first(() => typeReference(), () => expression())
+                    const value = longest(typeReference, expression)
                     if (!value) return value
                     const nm = rightMostNameOf(value)
                     return builder.NamedArgument(nm, value)
@@ -508,8 +522,6 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
             case Token.Var:
             case Token.Val:
                 return declaration()
-            case Token.LBrace:
-                return invokeMember()
         }
         if (pseudo == PseudoToken.Spread) {
             next()
@@ -518,7 +530,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         return null
     }
 
-    function invokeMember(): InvokeMemberElement {
+    function callSignature(): CallSignatureElement {
         return ctx(() => {
             expect(Token.LBrace)
             const typeParameters = optional(() => {
@@ -533,7 +545,26 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                 next()
                 result = typeReference()
             }
-            return builder.InvokeMember(typeParameters, parameters, result)
+            return builder.CallSignature(typeParameters, parameters, result)
+        })
+    }
+
+    function intrinsicCallSignature(): CallSignatureElement {
+        return ctx(() => {
+            expect(Token.LBraceBang)
+            const typeParameters = optional(() => {
+                const result = list(formalTypeParameter)
+                expectPseudo(PseudoToken.Arrow)
+                return result
+            }) || []
+            const parameters = list(formalIntrinsicParameter)
+            expect(Token.BangRBrace)
+            let result: Optional<Element> = undefined
+            if (current == Token.Colon) {
+                next()
+                result = typeReference()
+            }
+            return builder.IntrinsicCallSignature(typeParameters, parameters, result)
         })
     }
 
@@ -590,6 +621,15 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                 }
             }
             return null
+        })
+    }
+
+    function symbolLiteral(): Element {
+        return ctx(() => {
+            expectPseudo(PseudoToken.LessThanDollar)
+            const values = list(sequenceExpression)
+            expectPseudo(PseudoToken.DollarGreaterThan)
+            return builder.SymbolLiteral(values)
         })
     }
 
@@ -742,14 +782,19 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                         left = builder.Call(left, [l], [])
                         break
                     case Token.LParen:
+                        if (scanner.newline >= 0) break simpleLoop
                         left = call(left)
+                        break
+                    case Token.LBrack:
+                        if (scanner.newline >= 0) break simpleLoop
+                        left = index(left)
                         break
                     case Token.Symbol:
                         if (pseudo == PseudoToken.LessThan) {
                             const target = left
                             const callResult = optional(() => { call(target) })
                             if (callResult !== null)
-                                break
+                                break simpleLoop
                         }
                         // fall through
                     default:
@@ -821,6 +866,16 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         })
     }
 
+    function formalIntrinsicParameter(): Element | null {
+        if (current != Token.Identifier) return null
+        return ctx(() => {
+            const nm = name()
+            expect(Token.Colon)
+            const ty = typeReference()
+            return builder.Parameter(nm, ty, undefined)
+        })
+    }
+
     function call(target: Element): Element {
         // Don't use ctx here because we need to borrow the parent
         // context because that is where target is from.
@@ -838,6 +893,13 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
             args.push(lambda())
         }
         return builder.Call(target, args, typeArguments)
+    }
+
+    function index(target: Element): Element {
+        expect(Token.LBrack)
+        const index = expression()
+        expect(Token.RBrack)
+        return builder.Index(target, index)
     }
 
     function argument(): Element | null {
@@ -913,9 +975,16 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
 
     function valueInitializer(): Element {
         return ctx(() => {
-            const members = delimited(Token.LBrack, Token.RBrack, () => { return list(memberInitializer) })
-            return builder.ValueLiteral(members)
+            expect(Token.LBrack)
+            const qualifier = optional(typeQualifier)
+            const members = list(memberInitializer)
+            expect(Token.RBrack)
+            return builder.ValueLiteral(members, qualifier)
         })
+    }
+
+    function typeQualifier(): Element {
+        return pseudoDelimited(PseudoToken.LessThan, PseudoToken.GreaterThan, typeReference)
     }
 
     function arrayInitializerElement(): Element {
@@ -939,10 +1008,11 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
 
     function entityInitializer(): Element {
         return ctx(() => {
-            const members = delimited(Token.LBrackBang, Token.BangRBrack, () => {
-                return list(memberInitializer)
-            })
-            return builder.EntityLiteral(members)
+            expect(Token.LBrackBang)
+            const qualifier = optional(typeQualifier)
+            const members = list(memberInitializer)
+            expect(Token.BangRBrack)
+            return builder.EntityLiteral(members, qualifier)
         })
     }
 
@@ -1110,7 +1180,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     }
                     break
             }
-            const initializer = expression()
+            const initializer = longest(typeReference, expression) ?? report("Expression expected")
             return builder.LetDeclaration(nm, ty, initializer)
         })
     }
@@ -1245,6 +1315,57 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         }
         if (err) throw err
         return null
+    }
+
+    function longest<T>(...elements: (() => T | null)[]): T | null {
+        let err: any = undefined
+        let errorOffset = 0
+        let longestSoFar: T | null = null
+        let longestOffset = 0
+        let longestScanner = scanner
+        let longestCurrent = current
+        let longestPseudo = pseudo
+        let longestExcluded = excluded
+        let longestSeperatorState = separatorState
+        for (let element of elements) {
+            if (element == yes) return yes()
+            const cloned = scanner.clone()
+            const clonedCurrent = current
+            const clonedPseudo = pseudo
+            const clonedExcluded = excluded.slice()
+            const clonedSeperatorState = separatorState
+            try {
+                const result = element()
+                const offset = scanner.offset
+                if (offset > longestOffset) {
+                    longestSoFar = result
+                    longestOffset = offset
+                    longestScanner = scanner
+                    longestCurrent = current
+                    longestPseudo = pseudo
+                    longestExcluded = excluded
+                    longestSeperatorState = separatorState
+                }
+            } catch (e) {
+                const offset = scanner.offset
+                if (offset > errorOffset) {
+                    err = e
+                    errorOffset = offset
+                }
+            }
+            scanner = cloned
+            current = clonedCurrent
+            pseudo = clonedPseudo
+            excluded = clonedExcluded
+            separatorState = clonedSeperatorState
+        }
+        if (err && !longestSoFar) throw err
+        scanner = longestScanner
+        current = longestCurrent
+        pseudo = longestPseudo
+        excluded = longestExcluded
+        separatorState = longestSeperatorState
+        return longestSoFar
     }
 
     function yes<T>(): T { return undefined as any as T }

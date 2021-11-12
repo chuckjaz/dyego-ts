@@ -1,0 +1,177 @@
+...Dyego
+
+let Vector = <
+    val x: Double
+    val y: Double
+    val z: Double
+
+    let `*`: { this: This, right as scale: Double }: Vector = { 
+        return [x: this.x * scale, y: this.y * scale, z: this.z * scale] 
+    }
+    let `+`: { this: This, right as other: Vector }: Vector = {
+        return [x: this.x + other.x, y: this.y + other.y, z: this.z + other.z ]
+    }
+    let `-`: { this: This, right as other: Vector }: Vector = {
+        return [x: this.x - other.x, y: this.y - other.y, z: this.z - other.z ]
+    }
+    let dot: { this: This, right as other: Vector }: Double = {
+        return this.x * other.x + this.y * other.y + this.z * other.z
+    }
+    let magnitude: { this: This }: Double = {
+        return (this dot this).sqrt()
+    }
+    let normalize: { this: This }: Double = {
+        return this * (1.0 / this.magnitude())
+    }
+>
+
+let Ray = <
+    val origin: Vector
+    val direction: Vector
+
+    let intersectsWith: { this: This, sphere: Sphere }: Double? = {
+        val l = sphere.center - this.origin
+        val tca = l dot this.direction
+        if (tca < 0.0) {
+            return null
+        }
+        val d2 = (l dot l) - tca * tca
+        val r2 = sphere.radius * sphere.radius
+        if (d2 > r2) {
+            return null
+        }
+        val thc = (r2 - d2).sqrt()
+        val t0 = tca - tch
+        val (t0 > 1000.0) {
+            return null
+        }
+        return t0
+    }
+>
+
+let Color = <
+    val r: Double
+    val g: Double
+    val b: Double
+
+    let `*`: { this: This, right as scale: Double }: Color = {
+        return [r: this.r * scale, g: this.g * scale, b: this.b * scale ]
+    }
+    let `+`: { this: This, right as other: Color }: Color = {
+        return [r: this.r + other.r, g: this.g + other.g, b: this.b + other.b ]
+    }
+    let intensity: { this: This }: Double = {
+        return this.r + this.g + this.b
+    }
+>
+
+val white: Color = [r: 1.0, g: 1.0, b: 1.0]
+val red: Color = [r: 1.0, g: 0.0, b: 0.0 ]
+val green: Color = [r: 0.0, g: 1.0, b: 0.0 ]
+val blue: Color = [r: 0.0, g: 0.0, b: 1.0 ]
+
+let Sphere = <
+    val center: Vector
+    val radius: Double
+    val color: Color
+
+    let normalize: { this: This, vector: Vector }: Vector = {
+        return (this.center - vector).normalize()
+    }
+>
+
+let Light = <
+    position: Vector
+    color: Color
+>
+
+val light1: Light = [position: [x: 0.7, y: -1.0, z: 1.7], color: white]
+val lut: String[] = [".", "-", "+", "X", "M"]
+val w: Int32 = 80
+val h: Int32 = 40
+
+val spheres: { t: Double }: Sphere[] = {
+    return [
+        [   center: [x: -1.0, y: 1.0 - t/10.0, z: 3.0]]
+            radius: 0.3
+            color: red
+        ]
+        [   center: [x: 0.0, y: 1.0 - t/10.0, z: 3.0 - t/4.0]]
+            radius: 0.8
+            color: green
+        ]
+        [   center: [x: 1.0, y: 0.0, z: 1.5]]
+            radius: 0.8
+            color: blue
+        ]
+    ]
+}
+
+let render: { t: Double } = {
+    var y: Int32 = 0
+    val fw: Double = w.toDouble()
+    val fh: Double = h.toDouble()
+    val scene = spheres(:t)
+    while (y < h) {
+        val fy = y.toDouble()
+        var x = 0
+        while (x < w) {
+            val fx = x.toDouble()
+            val ray: Ray = [<Ray>
+                origin: [x: 1.5, y: 1.7, z: -5.5]
+                direction: [x: (fx - fw)/3.0/fw, y: (fy - fh)/3.0/fh, z: 1.0]
+            ].normalize()
+            
+            var i = 0
+            let Hit = < sphere: Sphere, tval: Double > 
+            var hit: Hit? = null
+            while (i < scene.length) {
+                val sphere = spheres[i]
+                val tval = ray.intersectsWith(:sphere)
+                when (tval) {
+                    is Double -> {
+                        hit = [:sphere, :tval]
+                    }
+                }
+            }
+            when (hit) {
+                is Hit -> {
+                    print(text: pixel(:ray, :hit.sphere, :hit.tval))
+                }
+                else -> {
+                    print(text: " ")
+                }
+            }
+            x = x + 1
+        }
+        println(text: "\n")
+        y = y + 1
+    }
+}
+
+let pixel: { ray: Ray, sphere: Vector, tval: Double }: String = {
+    val p1: Vector = ray.origin + ray.direction * tval
+    val color: Color = diffuseShading(:p1, :sphere, light: light1)
+    val intensity: Double = color.intensity() / 3.0
+    return lut[(intensity * lut.length().toDouble()).floor()]
+}
+
+let clamp: { this: Double, min: Double, max: Double }: Double = {
+    return when {
+        this < min -> min
+        this > max -> max
+        else -> this
+    }
+}
+
+let diffuseShading: {p1: Vector, sphere: Sphere, light: Light}: Color = {
+    val n: Vector = sphere.normalize()
+    val lam: Double = ((light.position - p1).normalize() dot n).clamp(0.0, 1.0)
+    return light.color * lam * 0.5  + sphere.color * 0.3
+}
+
+var t: Double = 0.0
+while (t < 1.0) {
+    render(:t)
+    t = t + 0.3
+}
