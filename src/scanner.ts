@@ -102,6 +102,7 @@ export class Scanner {
                 case Code.plus:
                 case Code.bar:
                 case Code.dash:
+                case Code.dollar:
                 case Code.star:
                 case Code.slash:
                 case Code.percent:
@@ -155,6 +156,14 @@ export class Scanner {
                             if (!symbolExtender(src[offset])) {
                                 this.psuedo = PseudoToken.Sub
                                 this.value = "-"
+                                break loop
+                            }
+                            break
+                        case Code.dollar:
+                            if (src[offset] == Code.gt && !symbolExtender(src[offset + 1])) {
+                                offset++
+                                this.psuedo = PseudoToken.DollarGreaterThan
+                                this.value = "$>"
                                 break loop
                             }
                             break
@@ -263,6 +272,7 @@ export class Scanner {
                                         this.value = "<!"
                                         break loop
                                     }
+                                    break
                                 case Code.bar:
                                     offset++
                                     result = Token.VocabStart
@@ -273,6 +283,14 @@ export class Scanner {
                                     result = Token.ConstraintStart
                                     this.value = "<*"
                                     break loop
+                                case Code.dollar:
+                                    if (!symbolExtender(src[offset + 1])) {
+                                        offset++
+                                        this.psuedo = PseudoToken.LessThanDollar
+                                        this.value = "<$"
+                                        break loop
+                                    }
+                                    break
                             }
                             if (!symbolExtender(src[offset])) {
                                 this.psuedo = PseudoToken.LessThan
@@ -332,7 +350,6 @@ export class Scanner {
                     case Code.dash:
                     case Code.at:
                     case Code.sharp:
-                    case Code.dollar:
                     case Code.hat:
                         symbolLoop: while(true) {
                             const last = offset

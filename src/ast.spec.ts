@@ -65,6 +65,13 @@ describe("ast", () => {
             expect(n.typeArguments).toEqual([])
             ch(n).toEqual([t])
         })
+        it("can create an index", () => {
+            const n = builder.Index(t, v)
+            expect(n.kind).toBe(ElementKind.Index)
+            expect(n.target).toBe(t)
+            expect(n.index).toBe(v)
+            ch(n).toEqual([t, v])
+        })
         it("can create a named argument", () => {
             const n = builder.NamedArgument(t, v)
             expect(n.kind).toBe(ElementKind.NamedArgument)
@@ -73,15 +80,17 @@ describe("ast", () => {
             ch(n).toEqual([t, v])
         })
         it("can create a value literal", () => {
-            const n = builder.ValueLiteral([])
+            const n = builder.ValueLiteral([], undefined)
             expect(n.kind).toBe(ElementKind.ValueLiteral)
             expect(n.members).toEqual([])
+            expect(n.qualifier).toEqual(undefined)
             ch(n).toEqual([])
         })
         it("can create an entity literal", () => {
-            const n = builder.EntityLiteral([])
+            const n = builder.EntityLiteral([], undefined)
             expect(n.kind).toBe(ElementKind.EntityLiteral)
             expect(n.members).toEqual([])
+            expect(n.qualifier).toEqual(undefined)
             ch(n).toEqual([])
         })
         it("can create an value array literal", () => {
@@ -201,9 +210,16 @@ describe("ast", () => {
             expect(n.constraint).toBe(v)
             ch(n).toEqual([v])
         })
-        it("can create an invoke member", () => {
-            const n = builder.InvokeMember([t], [v], v)
-            expect(n.kind).toBe(ElementKind.InvokeMember)
+        it("can create a call signature", () => {
+            const n = builder.CallSignature([t], [v], v)
+            expect(n.kind).toBe(ElementKind.CallSignature)
+            expect(n.typeParameters).toEqual([t])
+            expect(n.parameters).toEqual([v])
+            expect(n.result).toEqual(v)
+        })
+        it("can create an intrinsic call signature", () => {
+            const n = builder.IntrinsicCallSignature([t], [v], v)
+            expect(n.kind).toBe(ElementKind.IntrinsicCallSignature)
             expect(n.typeParameters).toEqual([t])
             expect(n.parameters).toEqual([v])
             expect(n.result).toEqual(v)
@@ -220,6 +236,12 @@ describe("ast", () => {
             expect(n.kind).toBe(ElementKind.VocabularyLiteral)
             expect(n.members).toEqual([])
             ch(n).toEqual([])
+        })
+        it("can create a symbol literal", () => {
+            const n = builder.SymbolLiteral([v])
+            expect(n.kind).toBe(ElementKind.SymbolLiteral)
+            expect(n.values).toEqual([v])
+            ch(n).toEqual([v])
         })
         it("can create a array type", () => {
             const n = builder.ArrayType(t)

@@ -51,7 +51,7 @@ describe("type parameters", () => {
 describe("multiple files", () => {
     it("can enter multiple files", () => {
         const context = e({
-            "src" {
+            "src": {
                 "file1.dg": "let a = < >",
                 "file2.dg": "let b = < >"
             }

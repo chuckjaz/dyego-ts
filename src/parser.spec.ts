@@ -168,25 +168,30 @@ describe("Parser", () => {
         it("can use a type literal to export", () => {
             p("< let a = a, let b = b, >")
         })
-        it("can have a simple invoke member", () => {
-            t("< { } >")
-        })
-        it("can parse an invoke member with parameters", () => {
-            t("< { a: Int, b: Int } >")
-        })
-        it("can have an invoke member with a result", () => {
-            t("< { }: Int >")
-            t("< { a: Int, b: Int}: Int >")
-        })
-        it("can have an invoke member with a type parameter", () => {
-            t("< { T -> a: T }: T >")
-            t("< { T, V: Int -> a: T }: T >")
-        })
         it("can validate a type literal with a constraint", () => {
             t("< let a: Int = 1 > : Constraint")
         })
         function t(source: string) {
             return p(`let a = ${source}`)
+        }
+    })
+    describe("singatures", () => {
+        it("can have a simple signature", () => {
+            s("{ }")
+        })
+        it("can parse an signature with parameters", () => {
+            s("{ a: Int, b: Int }")
+        })
+        it("can have an signature with a result", () => {
+            s("{ }: Int")
+            s("{ a: Int, b: Int}: Int")
+        })
+        it("can have an signature with a type parameter", () => {
+            s("{ T -> a: T }: T")
+            s("{ T, V: Int -> a: T }: T")
+        })
+        function s(source: string) {
+            return p(`let a: ${source} = { }`)
         }
     })
     describe("mutable value type literal", () => {
@@ -207,9 +212,6 @@ describe("Parser", () => {
         })
         it("can use a type literal to export", () => {
             p("<! let a = a, let b = b, !>")
-        })
-        it("can have a simple invoke member", () => {
-            t("<! { } !>")
         })
         it("can validate a type literal with a constraint", () => {
             t("<! let a: Int = 1 !> : Constraint")

@@ -1,0 +1,168 @@
+...Dyego
+
+let Vector = <
+    let x = FieldSlot<Double, 0, 0>
+    let y = FieldSlot<Double, Double.`@locals`.length, Double.`@size`>
+    let z = FieldSlot<Double, Double.`@locals`.length + * 2, Double.`@size` * 2>
+
+    let `@ctor`: { 
+        this: Location<This>
+        x: ParameterSlot<Double, 0>
+        y: ParameterSlot<Double, Double.locals.length>
+        z: ParameterSlot<Double, Double.locals.length * 2> 
+    }: Vector = {
+        let result = LocalSlot<Vector, 0>
+        result.x = *x
+        result.y = *y
+        result.z = *z
+        return *result
+    }
+
+    let `@size` = Double.`@size` * 3
+    let `@locals` = Double.`@locals` * 3
+    let `@load.global`: { 
+        address: ParameterSlot<Address, 0> 
+    }: This = {
+        return [<This>
+            x: x.`@load.global`(*address)
+            y: y.`@load,global`(*address)
+            z: z.`@load.global(*address)
+        ]
+    }
+    let `@store.global`: { 
+        this: ParameterSlot<This, 0>
+        address: ParameterSlot<Address, This.locals.size> 
+    } = {
+        x.`@store.global`(*this.x, *address)
+        y.`@store.global`(*this.y, *address)
+        z.`@store.global`(*this.z, *address)
+    }
+    let `@load.local`: { 
+        index: ParameterSlot<Index, 0> 
+    }: This = {
+        return [<This>
+            x: x.`@load.local`(*index)
+            y: y.`@load,local`(*index)
+            z: z.`@load.local(*index)
+        ]
+    }
+    let `@store.local`: { 
+        this: ParameterSlot<This, 0>, 
+        index: ParameterSlot<Index, This.locals.size> 
+    } = {
+        x.`@store.local`(*this.x, *index)
+        y.`@store.local`(*this.y, *index)
+        z.`@store.local`(*this.z, *index)
+    }
+    let `@load.param`: { 
+        index: ParameterSlot<Index, 0> 
+    }: This = {
+        return [<This>
+            x: x.`@load.param`(*index)
+            y: y.`@load,param`(*index)
+            z: z.`@load.param(*index)
+        ]
+    }
+
+    let `*`: { 
+        this: ParameterSlot<This, 0>, 
+        scale: ParameterSlot<Double, This.locals.length> 
+    }: Vector = {
+        return [<This>
+            x: *this.x * *scale
+            y: *this.y * *scale
+            z: *this.z * *scale
+        ]
+    }
+    let `+`: { 
+        this: ParameterSlot<This, 0>, 
+        other: ParameterSlot<Vector, This.locals.length> 
+    }: Vector = {
+        return `Vector$ctor`(
+            x: *this.x * *other.x
+            y: *this.y * *other.y
+            z: *this.z * *other.z
+        )
+    }
+    let `-`: { 
+        this: ParameterSlot<This, 0>, 
+        other: ParameterSlot<Vector, This.locals.length>
+    }: Vector = {
+        return [x: *this.x - *other.x, y: *this.y - *other.y, z: *this.z - *other.z ]
+    }
+    let dot: { 
+        this: ParameterSlot<This, 0>, 
+        other: ParameterSlot<Vector, This.locals.length> 
+    }: Double = {
+        return *this.x * *other.x + *this.y * *other.y + *this.z * *other.z
+    }
+    let magnitude: { 
+        this: ParameterSlot<This, 0> 
+    }: Double = {
+        return (*this dot *this).sqrt()
+    }
+    let normalize: { this: ParameterSlot<This> }: Double = {
+        return *this * (1.0 / (*this).magnitude())
+    }
+>: Locatable
+
+let Ray = <
+    let origin = FieldSlot<Vector, 0, 0>
+    let direction = FieldSlot<Vector, Vector.locals.length, Vector.`@size`> 
+    let `@ctor`: { 
+        origin: ParameterSlot<Vector, 0>, 
+        direction: ParameterSlot<Vector, Vector.locals.length> 
+    }: Ray = {
+        let result = LocalSlot<Ray, 0>
+        result.origin = *origin
+        result.direciton = *direction
+        return *result
+    }
+    let intersectsWith: { 
+        this: ParameterSlot<This, 0>, 
+        sphere: ParameterSlot<Sphere, This.locals.length>
+    }: Double? = {
+        let l = LocalSlot<
+            Vector
+            0
+        >
+        l = *sphere.center - *this.origin
+        let tca = LocalSlot<
+            Double
+            Vector.locals.length
+        >
+        tca = *l dot *this.direction
+        if (*tca < 0.0) {
+            return null
+        }
+        let d2 = LocalSlot<
+            Double
+            Vector.locals.length + Double.locals.length
+        >
+        d2 = (*l dot *l) - *tca * *tca
+        let r2 = LocalSlot<
+            Double
+            Vector.locals.length + Double.locals.length * 2
+        >
+        r2 = *sphere.radius * *sphere.radius 
+        if (*d2 > *r2) {
+            return null
+        }
+        let thc = LocalSlot<
+            Double
+            Vector.locals.length + Double.locals.length * 3
+        >
+        tch = (*r2 - *d2).sqrt()
+        let t0 = LocalSlot<
+            Double
+            Vector.locals.length + Double.locals.length * 4
+        >
+        t0 = *tca - *tch
+
+        val (*t0 > 1000.0) {
+            return null
+        }
+        return *t0
+    }
+>
+
