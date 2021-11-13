@@ -4,15 +4,11 @@ import { parse } from "../parser"
 import { Scanner } from "../scanner"
 import { Module, TypeContext } from "./context"
 import { enterTypes } from "./enter"
+import { validate } from "./validate"
 
 describe("simple", () => {
     it("can enter a value type", () => {
         const context = e("let a = < >")
-        const symbol = f(context, "test.a")
-        expect(symbol.member.kind).toBe(MemberKind.Definition)
-    })
-    it("can enter a mutable type", () => {
-        const context = e("let a = <! !>")
         const symbol = f(context, "test.a")
         expect(symbol.member.kind).toBe(MemberKind.Definition)
     })
@@ -25,16 +21,6 @@ describe("simple", () => {
         const context = e("let a = < let b = < > >")
         const symbol = f(context, "test.a.b")
         expect(symbol.member.kind).toBe(MemberKind.Definition)
-    })
-    it("can enter a val", () => {
-        const context = e("val a: Int = 1")
-        const symbol = f(context, "test.a")
-        expect(symbol.member.kind).toBe(MemberKind.ValueField)
-    })
-    it("can enter a var", () => {
-        const context = e("var a: Int = 1")
-        const symbol = f(context, "test.a")
-        expect(symbol.member.kind).toBe(MemberKind.MutableField)
     })
 })
 
@@ -88,7 +74,9 @@ function p(p1: string | TypeContext | Directory): TypeContext {
     } else {
         context = d(p1)
     }
-    enterTypes(context)
+    const context0 = validate(context)
+    if (!context0) throw Error("contains invalid nodes")
+    enterTypes(context0)
     return context
 }
 

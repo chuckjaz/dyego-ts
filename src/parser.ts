@@ -1,7 +1,7 @@
 import {
     Optional, Name, ElementBuilder, BreakElement, Element, ContinueElement, LoopElement, WhenElement,
     OperatorPrecedenceRelation, OperatorPlacement, VocabularyOperatorPrecedence, SpreadElement,
-    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, TypeParameterElement, CallSignatureElement
+    OperatorAssociativity, ElementKind, childrenOf, NamedMemberElement, TypeParameterElement, CallSignatureElement, IntrinsicCallSignatureElement
 } from './ast'
 import {
     Scanner
@@ -384,7 +384,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
                     next()
                     constraint = typeReference()
                 }
-                return builder.MutableTypeLiteral(typeParameters, members, constraint)
+                return builder.EntityTypeLiteral(typeParameters, members, constraint)
             })
         })
     }
@@ -549,7 +549,7 @@ export function parse(scanner: Scanner, scope: VocabularyScope = new VocabularyS
         })
     }
 
-    function intrinsicCallSignature(): CallSignatureElement {
+    function intrinsicCallSignature(): IntrinsicCallSignatureElement {
         return ctx(() => {
             expect(Token.LBraceBang)
             const typeParameters = optional(() => {

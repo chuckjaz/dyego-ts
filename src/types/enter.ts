@@ -11,23 +11,20 @@ import {
     TypeParamater,
     TypeParameterSymbol,
     TypeSymbol,
-    ValueFieldMember
 } from ".";
 import { error, required } from "../assert";
 import {
     ConstraintLiteralElement,
-    Element,
+    Element0,
     ElementKind,
     LetDeclarationElement,
     Name,
-    TypeLiteralElement,
     TypeParameterElement,
-    ValDeclarationElement,
-    VarDeclarationElement
-} from "../ast";
+    ValueTypeLiteralElement
+} from "./ast0";
 import {
-    Module,
-    TypeContext
+    Module0,
+    TypeContext0
 } from "./context";
 
 /**
@@ -37,14 +34,14 @@ import {
  * 
  * @param context The typing context
  */
-export function enterTypes(context: TypeContext) {
+export function enterTypes(context: TypeContext0) {
     context.builders.set(context.global.symbol, context.global)
 
     for (const module of context.modules) {
         enterModule(module, context.global)
     }
 
-    function enterModule(module: Module, container: TypeBuilder) {
+    function enterModule(module: Module0, container: TypeBuilder) {
         let current = container
         let moduleLocation = module.file.location(0)
         for (const name of module.qualifiedName.split(".")) {
@@ -72,64 +69,21 @@ export function enterTypes(context: TypeContext) {
         enterElements(module.elements, current)
     }
 
-    function enterElements(elements: Element[], builder: TypeBuilder) {
+    function enterElements(elements: Element0[], builder: TypeBuilder) {
         for (let element of elements) {
             enterElement(element, builder)
         }
     }
 
-    function enterElement(element: Element, builder: TypeBuilder) {
+    function enterElement(element: Element0, builder: TypeBuilder) {
         switch (element.kind) {
             case ElementKind.LetDeclaration:
                 enterLetDeclaration(element, builder)
-                break
-            case ElementKind.ValDeclaration:
-                enterValDeclaration(element, builder)
-                break
-            case ElementKind.VarDeclaration:
-                enterVarDeclaration(element, builder)
                 break
             case ElementKind.TypeParameter:
                 enterTypeParameter(element, builder)
                 break
         }
-    }
-
-    function enterValDeclaration(
-        element: ValDeclarationElement,
-        builder: TypeBuilder
-    ) {
-        enterFieldDeclaration(MemberKind.ValueField, element, builder)
-    }
-
-    function enterVarDeclaration(
-        element: VarDeclarationElement,
-        builder: TypeBuilder
-    ) {
-        enterFieldDeclaration(MemberKind.MutableField, element, builder)
-    }
-
-    function enterFieldDeclaration(
-        kind: MemberKind,
-        element: VarDeclarationElement | ValDeclarationElement,
-        builder: TypeBuilder
-    ) {
-        const memberType = element.type
-        const name = memberType ? memberType.kind == ElementKind.Name ? memberType.text : "" : ""
-        const fieldTypeSymbol: TypeSymbol = {
-            name,
-            location: memberType || element
-        }
-        const member= {
-            kind,
-            type: fieldTypeSymbol
-        } as ValueFieldMember
-        const memberSymbol = {
-            name: element.name.text,
-            location: element.name,
-            member
-        }
-        builder.addMember(memberSymbol)
     }
 
     function enterLetDeclaration(
@@ -143,7 +97,6 @@ export function enterTypes(context: TypeContext) {
             case ElementKind.Name:
             case ElementKind.Selection:
             case ElementKind.AndType:
-            case ElementKind.OrType:
             case ElementKind.Call:
             case ElementKind.Literal:
             case ElementKind.Lambda:
@@ -151,9 +104,7 @@ export function enterTypes(context: TypeContext) {
             case ElementKind.Loop:
             case ElementKind.When:
             case ElementKind.ValueLiteral:
-            case ElementKind.EntityLiteral:
-            case ElementKind.ValueArrayLiteral:
-            case ElementKind.EntityArrayLiteral: {
+            case ElementKind.ValueArrayLiteral: {
                 // Enter member symbols that will be filled in later
                 const memberSymbol = {
                     name: element.name.text,
@@ -169,9 +120,6 @@ export function enterTypes(context: TypeContext) {
             case ElementKind.ValueTypeLiteral:
                 enterTypeLiteral(builder, DefinitionKind.ValueType, element.name, initializer)
                 break
-            case ElementKind.MutableTypeLiteral:
-                enterTypeLiteral(builder, DefinitionKind.MutableType, element.name, initializer)
-                break
             case ElementKind.ConstraintLiteral:
                 enterTypeLiteral(builder, DefinitionKind.Constraint, element.name, initializer)
                 break
@@ -182,7 +130,7 @@ export function enterTypes(context: TypeContext) {
         builder: TypeBuilder,
         kind: TypeDefinitionKind, 
         name: Name, 
-        literal: TypeLiteralElement | ConstraintLiteralElement
+        literal: ValueTypeLiteralElement | ConstraintLiteralElement
     ) {
         const typeSymbol: TypeSymbol = {
             name: name.text,
@@ -228,7 +176,7 @@ export function enterTypes(context: TypeContext) {
 }
 
 function requireTypeBuilderOf(
-    context: TypeContext,
+    context: TypeContext0,
     scope: TypeBuilder,
     name: string,
     kind: TypeKind
