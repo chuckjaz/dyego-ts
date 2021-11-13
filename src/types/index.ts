@@ -1,7 +1,7 @@
 import { required } from '../assert'
 import { Element, Optional } from '../ast'
 import { Literal } from '../tokens'
-import { TypeContext } from './context'
+import { TypeContext, TypeContext0 } from './context'
 import { Symbol, Scope, ScopeBuilder, scopeBuilder } from './symbols'
 
 // Types
@@ -246,7 +246,7 @@ export interface TypeBuilder extends  TypeBase, TypeWithMembers {
 }
 
 export function typeBuilder(
-    context: TypeContext,
+    context: TypeContext0,
     kind: BuildableTypeKinds,
     symbol: TypeSymbol,
     container?: TypeSymbol
@@ -269,13 +269,13 @@ class TypeBuilderImpl implements TypeBuilder {
     get members(): Scope<MemberSymbol> { return this.membersBuilder }
     get signatures(): Scope<SignatureSymbol> { return this.signaturesBuilder }
 
-    private context: TypeContext
+    private context: TypeContext0
     private typeParametersBuilder = scopeBuilder<TypeParameterSymbol>()
     private membersBuilder = scopeBuilder<MemberSymbol>()
     private signaturesBuilder = scopeBuilder<SignatureSymbol>()
 
     constructor(
-        context: TypeContext,
+        context: TypeContext0,
         kind: BuildableTypeKinds,
         symbol: TypeSymbol,
         container?: TypeSymbol

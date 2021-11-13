@@ -203,7 +203,7 @@ describe("ast", () => {
             ch(n).toEqual([v])
         })
         it("can create a mutable type literal", () => {
-            const n = builder.MutableTypeLiteral([], [], v)
+            const n = builder.EntityTypeLiteral([], [], v)
             expect(n.kind).toBe(ElementKind.MutableTypeLiteral)
             expect(n.members).toEqual([])
             expect(n.typeParameters).toEqual([])
@@ -246,13 +246,13 @@ describe("ast", () => {
         it("can create a array type", () => {
             const n = builder.ArrayType(t)
             expect(n.kind).toBe(ElementKind.ArrayType)
-            expect(n.operant).toBe(t)
+            expect(n.elements).toBe(t)
             ch(n).toEqual([t])
         })
         it("can create an optional type", () => {
             const n = builder.OptionalType(t)
             expect(n.kind).toBe(ElementKind.OptionalType)
-            expect(n.operant).toBe(t)
+            expect(n.target).toBe(t)
             ch(n).toEqual([t])
         })
         it("can create an and type", () => {

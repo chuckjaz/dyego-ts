@@ -56,14 +56,17 @@ export type Element =
     CallElement |
     IndexElement |
     NamedArgumentElement |
-    InitalizerElement |
-    ArrayInitalizerElement |
+    ValueLiteralElement |
+    EntityLiteralElement |
+    ValueArrayLiteralElement |
+    EntityArrayLiteralElement |
     NamedMemberInitializerElement |
     LetDeclarationElement |
     VarDeclarationElement |
     ValDeclarationElement |
     ConstraintLetDeclarationElement |
     LambdaElement |
+    IntrinsicLambdaElement |
     LoopElement |
     ParameterElement |
     TypeParameterElement |
@@ -71,14 +74,17 @@ export type Element =
     WhenElement |
     WhenValueClauseElement |
     WhenElseClauseElement |
-    TypeLiteralElement |
+    ValueTypeLiteralElement |
+    EntityTypeLiteralElement |
     ConstraintLiteralElement |
     CallSignatureElement |
+    IntrinsicCallSignatureElement |
     VocabularyLiteralElement |
     SymbolLiteralElement |
-    SymbolLiteralElement |
-    TypeUnaryExpressionElement |
-    TypeBinaryExpressionElement |
+    OrTypeElement |
+    AndTypeElement |
+    ArrayTypeElement |
+    OptionalTypeElement |
     TypeConstructorElement |
     VocabularyOperatorDeclarationElement
 
@@ -141,14 +147,28 @@ export interface NamedArgumentElement extends NamedElement {
 }
 
 export interface InitalizerElement extends Location {
-    readonly kind: ElementKind.ValueLiteral | ElementKind.EntityLiteral
     readonly members: Element[]
     readonly qualifier: Optional<Element>
 }
 
+export interface ValueLiteralElement extends InitalizerElement {
+    readonly kind: ElementKind.ValueLiteral
+}
+
+export interface EntityLiteralElement extends InitalizerElement {
+    readonly kind: ElementKind.EntityLiteral
+}
+
 export interface ArrayInitalizerElement extends Location {
-    readonly kind: ElementKind.ValueArrayLiteral | ElementKind.EntityArrayLiteral
     readonly elements: Element[]
+}
+
+export interface ValueArrayLiteralElement extends ArrayInitalizerElement {
+    readonly kind: ElementKind.ValueArrayLiteral
+}
+
+export interface EntityArrayLiteralElement extends ArrayInitalizerElement {
+    readonly kind: ElementKind.EntityArrayLiteral
 }
 
 export interface NamedMemberInitializerElement extends NamedElement{
@@ -180,12 +200,19 @@ export interface ConstraintLetDeclarationElement extends NamedElement {
     readonly initializer: Optional<Element>
 }
 
-export interface LambdaElement extends Location {
-    readonly kind: ElementKind.Lambda | ElementKind.IntrinsicLambda
+export interface LambdaCommonElement extends Location {
     readonly parameters: Element[]
     readonly typeParameters: Optional<Element[]>
     readonly body: Element[]
     readonly result: Optional<Element>
+}
+
+export interface LambdaElement extends LambdaCommonElement {
+    readonly kind: ElementKind.Lambda
+}
+
+export interface IntrinsicLambdaElement extends LambdaCommonElement {
+    readonly kind: ElementKind.IntrinsicLambda
 }
 
 export interface LoopElement extends Location {
@@ -228,11 +255,18 @@ export interface WhenElseClauseElement extends Location {
     readonly body: Element
 }
 
-export interface TypeLiteralElement extends Location {
-    readonly kind: ElementKind.ValueTypeLiteral | ElementKind.MutableTypeLiteral
+export interface TypeLiteralCommonElement extends Location {
     readonly typeParameters: TypeParameterElement[]
     readonly members: Element[]
     readonly constraint: Optional<Element>
+}
+
+export interface ValueTypeLiteralElement extends TypeLiteralCommonElement {
+    readonly kind: ElementKind.ValueTypeLiteral 
+}
+
+export interface EntityTypeLiteralElement extends TypeLiteralCommonElement {
+    readonly kind: ElementKind.MutableTypeLiteral
 }
 
 export interface ConstraintLiteralElement extends Location {
@@ -241,11 +275,18 @@ export interface ConstraintLiteralElement extends Location {
     readonly members: Element[]
 }
 
-export interface CallSignatureElement extends Location {
-    readonly kind: ElementKind.CallSignature | ElementKind.IntrinsicCallSignature
+export interface CallSignatureCommonElement extends Location {
     readonly typeParameters: Element[]
     readonly parameters: Element[]
     readonly result: Optional<Element>
+}
+
+export interface CallSignatureElement extends CallSignatureCommonElement {
+    readonly kind: ElementKind.CallSignature
+}
+
+export interface IntrinsicCallSignatureElement extends CallSignatureCommonElement {
+    readonly kind: ElementKind.IntrinsicCallSignature
 }
 
 export interface VocabularyLiteralElement extends Location {
@@ -258,13 +299,24 @@ export interface SymbolLiteralElement extends Location {
     readonly values: Element[]
 }
 
-export interface TypeUnaryExpressionElement extends Location {
-    readonly kind: ElementKind.ArrayType | ElementKind.OptionalType
-    readonly operant: Element
+export interface ArrayTypeElement extends Location {
+    readonly kind: ElementKind.ArrayType
+    readonly elements: Element
 }
 
-export interface TypeBinaryExpressionElement extends Location {
-    readonly kind: ElementKind.OrType | ElementKind.AndType
+export interface OptionalTypeElement extends Location {
+    readonly kind: ElementKind.OptionalType
+    readonly target: Element
+}
+
+export interface OrTypeElement extends Location {
+    readonly kind: ElementKind.OrType
+    readonly left: Element
+    readonly right: Element
+}
+
+export interface AndTypeElement extends Location {
+    readonly kind: ElementKind.AndType
     readonly left: Element
     readonly right: Element
 }
@@ -436,8 +488,10 @@ export function * childrenOf(element: Element) {
             yield * element.values
             break
         case ElementKind.ArrayType:
+            yield element.elements
+            break
         case ElementKind.OptionalType:
-            yield element.operant
+            yield element.target
             break
         case ElementKind.OrType:
         case ElementKind.AndType:
@@ -522,19 +576,19 @@ export class ElementBuilder {
         return { kind: ElementKind.NamedArgument, start: this.start, end: this.end, name, value}
     }
 
-    ValueLiteral(members: Element[], qualifier: Optional<Element>): InitalizerElement {
+    ValueLiteral(members: Element[], qualifier: Optional<Element>): ValueLiteralElement {
         return { kind: ElementKind.ValueLiteral, start: this.start, end: this.end, members, qualifier }
     }
 
-    EntityLiteral(members: Element[], qualifier: Optional<Element>): InitalizerElement {
+    EntityLiteral(members: Element[], qualifier: Optional<Element>): EntityLiteralElement {
         return { kind: ElementKind.EntityLiteral, start: this.start, end: this.end, members, qualifier }
     }
 
-    ValueArrayLiteral(elements: Element[]): ArrayInitalizerElement {
+    ValueArrayLiteral(elements: Element[]): ValueArrayLiteralElement {
         return { kind: ElementKind.ValueArrayLiteral, start: this.start, end: this.end, elements }
     }
 
-    EntityArrayLiteral(elements: Element[]): ArrayInitalizerElement {
+    EntityArrayLiteral(elements: Element[]): EntityArrayLiteralElement {
         return { kind: ElementKind.EntityArrayLiteral, start: this.start, end: this.end, elements }
     }
 
@@ -566,7 +620,7 @@ export class ElementBuilder {
         return { kind: ElementKind.Lambda, start: this.start, end: this.end, parameters, typeParameters, body, result }
     }
 
-    IntrinsicLambda(parameters: Element[], typeParameters: Optional<Element[]>, body: Element[], result: Optional<Element>): LambdaElement {
+    IntrinsicLambda(parameters: Element[], typeParameters: Optional<Element[]>, body: Element[], result: Optional<Element>): IntrinsicLambdaElement {
         return { kind: ElementKind.IntrinsicLambda, start: this.start, end: this.end, parameters, typeParameters, body, result }
     }
 
@@ -598,11 +652,11 @@ export class ElementBuilder {
         return { kind: ElementKind.WhenElseClause, start: this.start, end: this.end, body }
     }
 
-    ValueTypeLiteral(typeParameters: TypeParameterElement[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
+    ValueTypeLiteral(typeParameters: TypeParameterElement[], members: Element[], constraint: Optional<Element>): ValueTypeLiteralElement {
         return { kind: ElementKind.ValueTypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
     }
 
-    MutableTypeLiteral(typeParameters: TypeParameterElement[], members: Element[], constraint: Optional<Element>): TypeLiteralElement {
+    EntityTypeLiteral(typeParameters: TypeParameterElement[], members: Element[], constraint: Optional<Element>): EntityTypeLiteralElement {
         return { kind: ElementKind.MutableTypeLiteral, start: this.start, end: this.end, typeParameters, members, constraint }
     }
 
@@ -610,7 +664,7 @@ export class ElementBuilder {
         return { kind: ElementKind.CallSignature, start: this.start, end: this.end, typeParameters, parameters, result}
     }
 
-    IntrinsicCallSignature(typeParameters: Element[], parameters: Element[], result: Optional<Element>): CallSignatureElement {
+    IntrinsicCallSignature(typeParameters: Element[], parameters: Element[], result: Optional<Element>): IntrinsicCallSignatureElement {
         return { kind: ElementKind.IntrinsicCallSignature, start: this.start, end: this.end, typeParameters, parameters, result }
     }
 
@@ -626,19 +680,19 @@ export class ElementBuilder {
         return { kind: ElementKind.SymbolLiteral, start: this.start, end: this.end, values }
     }
 
-    ArrayType(operant: Element): TypeUnaryExpressionElement {
-        return { kind: ElementKind.ArrayType, start: this.start, end: this.end, operant }
+    ArrayType(elements: Element): ArrayTypeElement {
+        return { kind: ElementKind.ArrayType, start: this.start, end: this.end, elements }
     }
 
-    OptionalType(operant: Element): TypeUnaryExpressionElement {
-        return { kind: ElementKind.OptionalType, start: this.start, end: this.end, operant }
+    OptionalType(target: Element): OptionalTypeElement {
+        return { kind: ElementKind.OptionalType, start: this.start, end: this.end, target }
     }
 
-    OrType(left: Element, right: Element): TypeBinaryExpressionElement {
+    OrType(left: Element, right: Element): OrTypeElement {
         return { kind: ElementKind.OrType, start: this.start, end: this.end, left, right }
     }
 
-    AndType(left: Element, right: Element): TypeBinaryExpressionElement {
+    AndType(left: Element, right: Element): AndTypeElement {
         return { kind: ElementKind.AndType, start: this.start, end: this.end, left, right }
     }
 
