@@ -1,6 +1,6 @@
 export interface Location {
-    start: number
-    end: number
+    readonly start: number
+    readonly end: number
 }
 
 export function isValid(loc: Location) {

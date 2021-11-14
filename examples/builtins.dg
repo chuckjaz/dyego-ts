@@ -292,7 +292,7 @@ let rt = <
         let toInt64: Inst = rt.int32.toInt64
         let toUInt64: Inst = rt.int32.toUInt64
     >
-    let int64 = <
+    let uint64 = <
         let size: Size = 8
         let locals = [ locals.int64 ]
         let base: Inst = 0x0900

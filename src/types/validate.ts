@@ -43,6 +43,7 @@ export function validate(context: TypeContext): TypeContext0 | null {
             case ast.ElementKind.ValueTypeLiteral:
             case ast.ElementKind.ConstraintLiteral:
             case ast.ElementKind.CallSignature:
+            case ast.ElementKind.IntrinsicCallSignature:
             case ast.ElementKind.VocabularyLiteral:
             case ast.ElementKind.SymbolLiteral:
             case ast.ElementKind.ArrayType:

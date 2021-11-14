@@ -3,9 +3,11 @@ export { ElementKind, Optional } from "../ast"
 
 type OnlyElement0<T> =
     T extends ast.Name ? Name :
+    T extends ast.Name[] ? Name[] :
     T extends ast.Element ? Element0 : 
     T extends ast.Element[] ? Element0[] : 
     T extends ast.Optional<Element> ? ast.Optional<Element0> : 
+    T extends ast.Optional<Element[]> ? ast.Optional<Element0[]> :
     T
 
 export type ToElement0<T> = {
@@ -38,6 +40,7 @@ export type WhenElseClauseElement = ToElement0<ast.WhenElseClauseElement>
 export type ValueTypeLiteralElement = ToElement0<ast.ValueTypeLiteralElement>
 export type ConstraintLiteralElement = ToElement0<ast.ConstraintLiteralElement>
 export type CallSignatureElement = ToElement0<ast.CallSignatureElement>
+export type IntrinsicCallSignature = ToElement0<ast.IntrinsicCallSignatureElement>
 export type VocabularyLiteralElement = ToElement0<ast.VocabularyLiteralElement>
 export type SymbolLiteralElement = ToElement0<ast.SymbolLiteralElement>
 export type ArrayTypeElement = ToElement0<ast.ArrayTypeElement>
@@ -71,6 +74,7 @@ export type Element0 =
     ValueTypeLiteralElement |
     ConstraintLiteralElement |
     CallSignatureElement |
+    IntrinsicCallSignature |
     VocabularyLiteralElement |
     SymbolLiteralElement |
     ArrayTypeElement |
