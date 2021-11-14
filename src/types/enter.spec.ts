@@ -2,9 +2,10 @@ import { DefinitionKind, MemberKind, MemberSymbol, TypeBuilder } from "."
 import { FileSet } from "../files"
 import { parse } from "../parser"
 import { Scanner } from "../scanner"
-import { Module, TypeContext } from "./context"
+import { Module, TypeContext, TypeContext0 } from "./context"
 import { enterTypes } from "./enter"
 import { validate } from "./validate"
+import { readFileSync } from 'fs'
 
 describe("simple", () => {
     it("can enter a value type", () => {
@@ -49,6 +50,16 @@ describe("multiple files", () => {
     })
 })
 
+describe("examples", () => {
+    it("can enter buildins.dg", () => {
+        const context = e({
+            "src": {
+                "builtins.dg": readFileSync("examples/builtins.dg", 'utf8')
+            }
+        })
+    })
+})
+
 describe("errors", () => {
     it("can detect a duplicate symbol", () => {
         err("let a = 1, let a = 2", "Duplicate symbol")
@@ -75,14 +86,31 @@ function p(p1: string | TypeContext | Directory): TypeContext {
         context = d(p1)
     }
     const context0 = validate(context)
-    if (!context0) throw Error("contains invalid nodes")
+    if (!context0) {
+        noErrors(context)
+        return context
+    }
     enterTypes(context0)
     return context
 }
 
+function noErrors(context: TypeContext | TypeContext0) {
+    if (context.diagnostics.length) {
+        throw Error(`contains invalid nodes: ${
+            context.diagnostics.map(d => `${
+                context.fileSet.position(d.location).display()
+            }: ${d.message}${
+                d.additional.length ? ` (${
+                    d.additional.map(a => context.fileSet.position(a).display()).join(", ")
+                })` : ''
+            }` ).join(", ")
+        }`)
+    }
+}
+
 function e(p1: string | TypeContext | Directory): TypeContext {
     const context = p(p1)
-    expect(context.diagnostics.length).toBe(0)
+    noErrors(context)
     return context
 }
 
